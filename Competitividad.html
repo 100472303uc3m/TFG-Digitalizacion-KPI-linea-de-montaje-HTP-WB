@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <?!= include('BootstrapCSS'); ?>
+
+    <!-- Bootstrap JS -->
+    <?!= include('BootstrapJS'); ?>
+
+  </head>
+  <body>
+    <!-- Loading Spinner Overlay -->
+    <div class="d-flex justify-content-center align-items-center" id='overlay' style="height: 100vh">
+      <div class="spinner-border m-3" role="status"></div>
+      <strong class="loading-text" id="overlay-text">Por favor espere...</strong>
+    </div>
+
+    <!-- Page -->
+    <div id="page" style="display: none;">
+
+      <!-- Navigation bar -->
+      {{NAVBAR}}
+
+      <!-- Top Bar -->
+      <nav class="nav-scroller bg-light box-shadow border-bottom position-fixed mb-3" style="width: 100%; z-index: 1000;">
+        <nav class='nav nav-underline'>
+          <div class="container-fluid text-center">
+            <div class='row'>
+              <!-- Buttons -->
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate"  id='btn-ene' onclick='changeMonth(0)'>Ene</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-feb' onclick='changeMonth(1)'>Feb</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-mar' onclick='changeMonth(2)'>Mar</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-abr' onclick='changeMonth(3)'>Abr</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-may' onclick='changeMonth(4)'>May</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-jun' onclick='changeMonth(5)'>Jun</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-jul' onclick='changeMonth(6)'>Jul</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-ago' onclick='changeMonth(7)'>Ago</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-sep' onclick='changeMonth(8)'>Sep</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-oct' onclick='changeMonth(9)'>Oct</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-nov' onclick='changeMonth(10)'>Nov</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-dic' onclick='changeMonth(11)'>Dic</button>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </nav>
+
+      <!-- Content -->
+      <div class='container-fluid'>
+        <div class='row'>
+
+          <!-- Sidebar -->
+          <nav class="col-md-2 d-none d-md-block bg-white sidebar border-right">
+            <div class="sidebar position-fixed" style="left: 6%; top: 15%;">
+              <ul class="nav flex-column">
+                <!-- Buttons -->
+                <li class='nav-item  mt-3 mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-497' onclick='changeProgram("497")'>11497</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinner497'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-495' onclick='changeProgram("495")'>11495</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinner495'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-479' onclick='changeProgram("479")'>11479</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinner479'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-455' onclick='changeProgram("455")'>11455</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinner455'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+              </ul>
+            </div>
+          </nav>
+
+          <!-- Main -->
+          <main role='main' class='col-md-9 ml-sm auto col-lg-10 pt-5 px-4'>
+
+            <!-- Data Cards -->
+            <div id="dataCards">
+              <div class="row m-3 border-bottom">
+                <h4>CVAT (YtD)</h4>
+              </div>
+              <div class='row m-2'>
+                <div class="col-4">
+                  <div class='card shadow-sm'>
+                    <h6 class='card-header text-center'>Actual + Forecast</h6>
+                    <div class='card-body'>
+                      <div class="row m-2">
+                        <div class="col-12">
+                          <h6 class="card-subtitle" id='dataCVATActual'></h6>
+                          <h6 class="card-subtitle" id='dataEffectivityActual'></h6>
+                          <h6 class="card-subtitle" id='dataEfficiencyActual'></h6>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class='card shadow-sm'>
+                    <h6 class='card-header text-center' id="targetCard"></h6>
+                    <div class='card-body'>
+                      <div class="row m-2">
+                        <div class="col-12">
+                          <h6 class="card-subtitle text-muted" id='dataCVATTarget'></h6>
+                          <h6 class="card-subtitle text-muted" id='dataEffectivityTarget'></h6>
+                          <h6 class="card-subtitle text-muted" id='dataEfficiencyTarget'></h6>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class='card shadow-sm'>
+                    <h6 class='card-header text-center'>GAP</h6>
+                    <div class='card-body'>
+                      <div class="row m-2">
+                        <div class="col-12">
+                          <h6 class="card-subtitle" id='dataCVATGap'></h6>
+                          <h6 class="card-subtitle" id='dataEffectivityGap'></h6>
+                          <h6 class="card-subtitle" id='dataEfficiencyGap'></h6>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tables -->
+            <div class="row mt-5 mx-2 mb-3 border-bottom">
+              <h4>Data Tables</h4>
+            </div>
+            <div class="row m-4">
+              <!-- Buttons -->
+              <div class="col-4">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-PlantillaTable' onclick='changeTableTopic("PlantillaTable")'>Plantilla</button>
+              </div>
+              <div class="col-4">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-Fte' onclick='changeTableTopic("Fte")'>CVAT FTE</button>
+              </div>
+              <div class="col-4">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-Cvat' onclick='changeTableTopic("Cvat")'>CVAT</button>
+              </div>
+            </div>
+            <div class='row m-2'>
+              <!-- Comparison Table -->
+              <div class="d-flex justify-content-center align-items-center" id='comparisonTableSpinner'>
+                <div class="spinner-border m-3" role="status"></div>
+              </div>
+              <div id='comparisonTable'></div>
+            </div>
+
+            <!-- Line -->
+            <div class="row mt-5 mx-2 mb-3 border-bottom">
+              <h4>Data Evo.</h4>
+            </div>
+            <div class="row m-4">
+              <!-- Buttons -->
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-PlantillaLine' onclick='changeLineTopic("PlantillaLine")'>Plantilla</button>
+              </div>
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-CVATPerc' onclick='changeLineTopic("CVATPerc")'>CVAT %</button>
+              </div>
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-Effectivity' onclick='changeLineTopic("Effectivity")'>Effectivity %</button>
+              </div>
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-Efficiency' onclick='changeLineTopic("Efficiency")'>Efficiency %</button>
+              </div>
+            </div>
+            <div class='row m-2'>
+              <!-- Chart -->
+              <div class="d-flex justify-content-center align-items-center" id='lineGraphSpinner'>
+                <div class="spinner-border m-3" role="status"></div>
+              </div>
+              <div id='lineGraph'></div>
+              <div id='lineGraphPintura'></div>
+              <div id='lineGraphTallerElectrico'></div>
+              <div id='lineGraphCuartoSellantes'></div>
+            </div>
+
+            <div class='row m-2'>
+              <!-- Routing Report Comparison Table -->
+              <div class="row mt-5 mx-2 mb-3 border-bottom">
+                <h4>Routing Report Comparison</h4>
+              </div>
+              <div class="d-flex justify-content-center align-items-center" id='routingReportSpinner'>
+                <div class="spinner-border m-3" role="status"></div>
+              </div>
+              <div class='col-12'>
+                <div id='routingReportTable'></div>
+              </div>
+            </div>
+            
+          </main>
+        </div>
+      </div>
+    </div>
+    <!-- Script -->
+    <?!= include('CVATScript'); ?>
+  </body>
+</html>

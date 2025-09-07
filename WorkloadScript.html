@@ -1,0 +1,1398 @@
+<script>
+  google.charts.load('current', {'packages':['corechart', 'line'], 'language': 'es'});
+
+  // === Global variables ===
+  // Data variables
+  var dataChart100Total;
+  var dataChart100HorasA;
+  var dataChart100HorasB;
+  var dataChart100HorasC;
+  var dataChart101Total;
+  var dataChart101HorasA;
+  var dataChart101HorasB;
+  var dataChart101HorasC;
+  var dataChart102Total;
+  var dataChart102HorasA;
+  var dataChart102HorasB;
+  var dataChart102HorasC;
+  var dataChartA320UnitTotal;
+  var dataChartA320Equipado;
+  var dataChartA320Pintura;
+  var dataChartA320TallerElectrico;
+  var dataChartA320CuartoSellantes;
+  var dataChartA320MaterialesCompuestos;
+  var dataChartA330UnitTotal;
+  var dataChartA330Equipado;
+  var dataChartA330Pintura;
+  var dataChartA330TallerElectrico;
+  var dataChartA330CuartoSellantes;
+  var dataChartA330MaterialesCompuestos;
+  var dataChartA350UnitTotal;
+  var dataChartA350Equipado;
+  var dataChartA350Pintura;
+  var dataChartA350TallerElectrico;
+  var dataChartA350CuartoSellantes;
+  var dataChartA350MaterialesCompuestos;
+  var dataChartS19UnitTotal;
+  var dataChartS19Pintura;
+  var dataChartS19CuartoSellantes;
+
+  // Chart variables
+  var workloadChart;
+  var chartOptions100Total;
+  var chartOptions100HorasA;
+  var chartOptions100HorasB;
+  var chartOptions100HorasC;
+  var chartOptions101Total;
+  var chartOptions101HorasA;
+  var chartOptions101HorasB;
+  var chartOptions101HorasC;
+  var chartOptions102Total;
+  var chartOptions102HorasA;
+  var chartOptions102HorasB;
+  var chartOptions102HorasC;
+  var chartOptionsA320UnitTotal;
+  var chartOptionsA320Equipado;
+  var chartOptionsA320Pintura;
+  var chartOptionsA320TallerElectrico;
+  var chartOptionsA320CuartoSellantes;
+  var chartOptionsA320MaterialesCompuestos;
+  var chartOptionsA330UnitTotal;
+  var chartOptionsA330Equipado;
+  var chartOptionsA330Pintura;
+  var chartOptionsA330TallerElectrico;
+  var chartOptionsA330CuartoSellantes;
+  var chartOptionsA330MaterialesCompuestos;
+  var chartOptionsA350UnitTotal;
+  var chartOptionsA350Equipado;
+  var chartOptionsA350Pintura;
+  var chartOptionsA350TallerElectrico;
+  var chartOptionsA350CuartoSellantes;
+  var chartOptionsA350MaterialesCompuestos;
+  var chartOptionsS19UnitTotal;
+  var chartOptionsS19Pintura;
+  var chartOptionsS19CuartoSellantes;
+
+  // Auxiliary variables
+  var workloadData100;
+  var workloadData101;
+  var workloadData102;
+  var workloadDataA320;
+  var workloadDataA330;
+  var workloadDataA350;
+  var workloadDataS19;
+
+  var currentProgram;
+  var currentTopic;
+  var currentQuarter;
+  var programParameter;
+  var sheetIdParameter;
+  var monthIndex;
+
+  // Variables for point styles
+  var point1;
+  var point2;
+  var point3;
+  var point4;
+  var point5;
+  var point6;
+  var point7;
+  var point8;
+  var point9;
+  var point10;
+  var point11;
+  var point12;
+  
+  // Function that defines style for points in line charts
+  function defineChartPointColors() {
+    // Define chart points
+    for (let n = 1; n < 13; n++) {
+      if (n <= monthIndex) {
+        eval('point' + n + '= "point { fill-color: blue; }"');
+      }
+      else {
+        eval('point' + n + '= "point { fill-color: green; shape-type: square; size: 5 }"');
+      }
+    }
+  };
+
+  // Function that finds min points for chart vertical axis depending on data points
+  function findMinMaxPoints(dataArray) {
+    // Find the min and max points in the array
+    var minPoint = dataArray[1][1];
+    var maxPoint = 0;
+    for (var row = 0; row < dataArray.length; row++) {
+      for (var col = 0; col < dataArray[0].length; col++) {
+        if (typeof dataArray[row][col] === 'number') {
+          if (dataArray[row][col] < minPoint) {
+            minPoint = dataArray[row][col];
+          }
+          if (dataArray[row][col] > maxPoint) {
+            maxPoint = dataArray[row][col];
+          }
+        }
+      }
+    }
+
+    // Calculate mean point
+    var meanPoint = (minPoint + maxPoint) / 2;
+
+    // Return vertical axis minimum and maximum values
+    if (minPoint - (meanPoint / 2) < 0) {
+      return [0, maxPoint + (meanPoint / 2)];
+    }
+    return [minPoint - (meanPoint / 2), maxPoint + (meanPoint / 2)];
+  };
+
+  // Function that suppresses the loading overlay and shows the page
+  function showPage() {
+    // Get element
+    var overlay = document.getElementById("overlay");
+    var page = document.getElementById("page");
+
+    // We only suppress the element once
+    if (overlay != null) {
+      overlay.remove();   // Remove overlay
+      page.style.display = "block";   // Make page visible
+    }
+  };
+  
+  // Function that handles errors when retreiving 11100UH data
+  function errorHandler(error) {
+    // Log the error for debugging
+    console.log('ERROR: ' + error.message);
+
+    // Display warning
+    document.getElementById('overlay-text').innerHTML = '!';
+  };
+
+  // Function that handles all the logic for loading the initial state of the page
+  function initPage(program) {
+    // Define current workload
+    eval('var currentWorkload = workloadData' + program);
+
+    // Define month index IF we are in the initial state
+    if (currentProgram == undefined) {
+      monthIndex = currentWorkload.MonthIndex;
+      console.log('Month Index: ' + monthIndex);
+      defineChartPointColors();
+    }
+
+    // Remove line graph spinner
+    if (document.getElementById('lineGraphSpinner')) {
+      document.getElementById('lineGraphSpinner').remove();
+    }
+
+    // Load chart data
+    eval('loadCharts' + program + '();');
+    
+    // Remove loading spinner
+    document.getElementById('spinner' + program).remove();
+
+    // Prepare the display of rest of the page IF we are in the initial state
+    if (currentProgram == undefined) {
+      // Initialize current program
+      currentProgram = program;
+      
+      // Initialize current topic
+      if (program == '100' || program == '101' || program == '102') {
+        currentTopic = 'Total';
+      }
+      else {
+        currentTopic = 'UnitTotal';
+      }
+
+      // Initialize current quarter
+      currentQuarter = 'Q0';
+
+      if (currentWorkload.TargetValues4 && currentWorkload.TargetValues4.length > 0) {
+        currentQuarter = 'Q4';
+      } 
+
+      else if (currentWorkload.TargetValues3 && currentWorkload.TargetValues3.length > 0) {
+        currentQuarter = 'Q3';
+      } 
+
+      else if (currentWorkload.TargetValues2 && currentWorkload.TargetValues2.length > 0) {
+        currentQuarter = 'Q2';
+      } 
+
+      else if (currentWorkload.TargetValues1 && currentWorkload.TargetValues1.length > 0) {
+        currentQuarter = 'Q1';
+      }
+
+      console.log(currentQuarter);
+
+      // Define title for target card
+      if (currentQuarter != 'Q0') {
+        document.getElementById('targetCard').innerHTML = 'Target OP' + currentQuarter.slice(1);  
+      }
+      else {
+        document.getElementById('targetCard').innerHTML = 'Target OP';
+      }
+
+      // Auxiliary list for data loading and display setting
+      programsList = ['100', '101', '102', 'A320', 'A330', 'A350', 'S19'];
+
+      // Hide other buttons until the data has finished loading
+      programsList.forEach((element) => {
+        if (element != program) {
+          document.getElementById('btn-' + element).style.display = 'none';
+        }
+      });
+
+      // Suppress loading overlay
+      showPage();
+
+      // Write data on data cards
+      changeCards();
+
+      // Try drawing charts
+      const drawInterval = setInterval(function() {
+        // Auxiliary variables
+        eval('var chartData = dataChart' + program + currentTopic);
+        eval('var optionsData = chartOptions' + program + currentTopic);
+
+        // Try drawing
+        if (chartData && optionsData) {
+          eval('drawCharts(dataChart' + program + currentTopic + ', chartOptions' + program + currentTopic + ');');
+          clearInterval(drawInterval);
+        }
+      }, 1000);
+
+      // Format buttons in top/side bars on start
+      formatButtons('months');
+      formatButtons('program');
+      formatButtons('topic');
+
+      // Load rest of data for page
+      programsList.forEach((element) => {
+        if (element != program) {
+          eval('google.script.run.withSuccessHandler(load' + element + 'UH).withFailureHandler(errorHandler).getUnitHours("' + sheetIdParameter + '", "' + element + '");');
+        }
+      });
+    }
+    else {
+      // Else, display button as data has finished loading
+      document.getElementById('btn-' + program).style.display = 'block';
+    }
+  };
+
+  // Function that loads 11100 UH data
+  function load100UH(returnedData) {
+    // Initialize global variable depending on current quarter
+    workloadData100 = returnedData;
+
+    console.log('Finished loading 11100 UH data!');
+
+    // Load initial page
+    initPage('100');
+  };
+
+  // Function that loads 11101 UH data
+  function load101UH(returnedData) {
+    // Initialize global variable depending on current quarter
+    workloadData101 = returnedData;
+    
+    console.log('Finished loading 11101 UH data!');
+
+    // Load initial page
+    initPage('101');
+  };
+
+  // Function that loads 11102 UH data
+  function load102UH(returnedData) {
+    // Initialize global variable depending on current quarter
+    workloadData102 = returnedData;
+
+    console.log('Finished loading 11102 UH data!');
+
+    // Load initial page
+    initPage('102');  
+  };
+
+  // Function that loads A320 UH data
+  function loadA320UH(returnedData) {
+    // Initialize global variable depending on current quarter
+    workloadDataA320 = returnedData;
+
+    console.log('Finished loading A320 UH data!');
+    
+    // Load initial page
+    initPage('A320');
+  };
+
+  // Function that loads A330 UH data
+  function loadA330UH(returnedData) {
+    // Initialize global variable depending on current quarter
+    workloadDataA330 = returnedData;
+
+    console.log('Finished loading A330 UH data!');
+
+    // Load initial page
+    initPage('A330');
+  };
+
+  // Function that loads A350 UH data
+  function loadA350UH(returnedData) {
+    // Initialize global variable depending on current quarter
+    workloadDataA350 = returnedData;
+
+    console.log('Finished loading A350 UH data!');
+
+    // Load initial page
+    initPage('A350');
+  };
+
+  // Function that loads S19 UH data
+  function loadS19UH(returnedData) {
+    // Initialize global variable depending on current quarter
+    workloadDataS19 = returnedData;
+
+    console.log('Finished loading S19 UH data!');
+
+    // Load initial page
+    initPage('S19');
+  };
+
+  // Function that loads spreadsheet data and loads initial page state - async
+  function loadPage() {
+    // Check URL params to decide which data to load
+    google.script.url.getLocation(function(location) {
+      programParameter = location.parameter.program;
+      sheetIdParameter = location.parameter.sheetId;
+      console.log("URL Program Parameter: " + programParameter);
+      console.log("URL Sheet ID Parameter: " + sheetIdParameter);
+
+      // Load petitioned data only (speeds up initial load time)
+      if (programParameter == 'first') {
+        google.script.run.withSuccessHandler(load100UH).withFailureHandler(errorHandler).getUnitHours(sheetIdParameter, '100');
+      }
+      else if (programParameter == 'second') {
+        google.script.run.withSuccessHandler(load101UH).withFailureHandler(errorHandler).getUnitHours(sheetIdParameter, '101');
+      }
+      else if (programParameter == 'third') {
+        google.script.run.withSuccessHandler(load102UH).withFailureHandler(errorHandler).getUnitHours(sheetIdParameter, '102');
+      }
+      else if (programParameter == 'fourth') {
+        google.script.run.withSuccessHandler(loadA320UH).withFailureHandler(errorHandler).getUnitHours(sheetIdParameter, 'A320');
+      }
+      else if (programParameter == 'fifth') {
+        google.script.run.withSuccessHandler(loadA330UH).withFailureHandler(errorHandler).getUnitHours(sheetIdParameter, 'A330');
+      }
+      else if (programParameter == 'sixth') {
+        google.script.run.withSuccessHandler(loadA350UH).withFailureHandler(errorHandler).getUnitHours(sheetIdParameter, 'A350');
+      }
+      else {  // Rather load something arbitrary in case of error
+        google.script.run.withSuccessHandler(loadS19UH).withFailureHandler(errorHandler).getUnitHours(sheetIdParameter, 'S19');
+      }
+    });
+  };
+
+  // Function that formats the color of the text in the top/side bar buttons
+  function formatButtons(selectedMode) {
+    // Auxiliary list
+    var topics = ['Total', 'HorasA', 'HorasB', 'HorasC', 'UnitTotal', 'Equipado', 'Pintura', 'TallerElectrico', 'CuartoSellantes', 'MaterialesCompuestos'];
+
+    // Only format necessary buttons
+    if (selectedMode == 'months') {
+      // Auxiliary list
+      var months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic',];
+
+      // Change button colors to gray
+      months.forEach((month) => {
+        document.getElementById('btn-' + month).style.color = "#A9A9A9";
+      });
+
+      // Change selected month button color to black
+      selectedMonth = months[monthIndex];
+      document.getElementById('btn-' + selectedMonth).style.color = 'black';
+    }
+    else if (selectedMode == 'program') {
+      // Auxiliary lists
+      var programs = ['100', '101', '102', 'A320', 'A330', 'A350', 'S19'];
+
+      // Change button colors to gray
+      programs.forEach((program) => {
+        document.getElementById('btn-' + program).style.color = "#A9A9A9";
+      });
+
+      // Change selected program button color to black
+      document.getElementById('btn-' + currentProgram).style.color = 'black';
+
+      // Depending on the program we conceal certain buttons and reveal others
+      if (currentProgram == '100' | currentProgram == '101' | currentProgram == '102') {
+        topics.forEach((topic) => {
+          if (topic == 'Total' | topic == 'HorasA' |  topic == 'HorasB' | topic == 'HorasC') {
+            document.getElementById('btn-' + topic).style.display = "block";
+          }
+          else {
+            document.getElementById('btn-' + topic).style.display = "none";
+          }
+          if (topic == 'Equipado' | topic == 'TallerElectrico' | topic == 'MaterialesCompuestos') {
+            document.getElementById('btn-' + topic).style.textDecorationLine = "none";
+          }
+        });
+      }
+      else if (currentProgram == 'A320' | currentProgram == 'A330' | currentProgram == 'A350') {
+        topics.forEach((topic) => {
+          if (topic == 'Total' | topic == 'HorasA' |  topic == 'HorasB' | topic == 'HorasC') {
+            document.getElementById('btn-' + topic).style.display = "none";
+          }
+          else {
+            document.getElementById('btn-' + topic).style.display = "block";
+          }
+          if (topic == 'Equipado' | topic == 'TallerElectrico' | topic == 'MaterialesCompuestos') {
+            document.getElementById('btn-' + topic).style.textDecorationLine = "none";
+          }
+        });
+      }
+      else {
+        topics.forEach((topic) => {
+          if (topic == 'Total' | topic == 'HorasA' |  topic == 'HorasB' | topic == 'HorasC') {
+            document.getElementById('btn-' + topic).style.display = "none";
+          }
+          else {
+            document.getElementById('btn-' + topic).style.display = "block";
+          }
+          if (topic == 'Equipado' | topic == 'TallerElectrico' | topic == 'MaterialesCompuestos') {
+            document.getElementById('btn-' + topic).style.textDecorationLine = "line-through";
+          }
+        });
+      }
+    }
+    else if (selectedMode == 'topic') {
+      // Change button colors to gray
+      topics.forEach((topic) => {
+        document.getElementById('btn-' + topic).style.color = "#A9A9A9";
+      });
+
+      // Change selected topic button color to black
+      document.getElementById('btn-' + currentTopic).style.color = 'black';
+    }
+  };
+
+  // Function that builds line chart data table arrays dynamically depending on defined quarters
+  function buildDataTableArrays(program, topic) {
+    // Auxiliary variables
+    eval('var arrayData = workloadData' + program + '.ActualValues');
+    eval('var arrayDataQ4 = workloadData' + program + '.TargetValues4');
+    eval('var arrayDataQ3 = workloadData' + program + '.TargetValues3');
+    eval('var arrayDataQ2 = workloadData' + program + '.TargetValues2');
+    eval('var arrayDataQ1 = workloadData' + program + '.TargetValues1');
+    
+    // Initialize static data in array
+    var chartHeader = ['Mes', 'Actual + Forecast', {'type': 'string', 'role': 'style'}]
+
+    // Initialize rows depending on topic
+    if (topic == 'Total') {
+      var arrayIndex = 3;
+    }
+    else if (topic == 'HorasA') {
+      var arrayIndex = 0;
+    }
+    else if (topic == 'HorasB') {
+      var arrayIndex = 1;
+    }
+    else if (topic == 'HorasC') {
+      var arrayIndex = 2;
+    }
+    else if (topic == 'UnitTotal') {
+      if (program == 'S19') {
+        var arrayIndex = 2;
+      }
+      else {
+        var arrayIndex = 5;
+      }
+    }
+    else if (topic == 'Equipado') {
+      var arrayIndex = 0;
+    }
+    else if (topic == 'Pintura') {
+      if (program == 'S19') {
+        var arrayIndex = 0;
+      }
+      else {
+        var arrayIndex = 1;
+      }
+    }
+    else if (topic == 'TallerElectrico') {
+      var arrayIndex = 2;
+    }
+    else if (topic == 'CuartoSellantes') {
+      if (program == 'S19') {
+        var arrayIndex = 1;
+      }
+      else {
+        var arrayIndex = 3;
+      }
+    }
+    else if (topic == 'MaterialesCompuestos') {
+      var arrayIndex = 4;
+    }
+
+    // Define initial rows
+    var rowOne = ['Ene', parseFloat(arrayData[arrayIndex][1]), point1];
+    var rowTwo = ['Feb', parseFloat(arrayData[arrayIndex][2]), point2];
+    var rowThree = ['Mar', parseFloat(arrayData[arrayIndex][3]), point3];
+    var rowFour = ['Abr', parseFloat(arrayData[arrayIndex][4]), point4];
+    var rowFive = ['May', parseFloat(arrayData[arrayIndex][5]), point5];
+    var rowSix = ['Jun', parseFloat(arrayData[arrayIndex][6]), point6];
+    var rowSeven = ['Jul', parseFloat(arrayData[arrayIndex][7]), point7];
+    var rowEight = ['Ago', parseFloat(arrayData[arrayIndex][8]), point8];
+    var rowNine = ['Sep', parseFloat(arrayData[arrayIndex][9]), point9];
+    var rowTen = ['Oct', parseFloat(arrayData[arrayIndex][10]), point10];
+    var rowEleven = ['Nov', parseFloat(arrayData[arrayIndex][11]), point11];
+    var rowTwelve = ['Dic', parseFloat(arrayData[arrayIndex][12]), point12];
+
+    // Append additional data if it exists
+    if (arrayDataQ4 && arrayDataQ4.length > 0) {
+      chartHeader.push('Cuatrimestre 4');
+      rowOne.push(parseFloat(arrayDataQ4[arrayIndex][1]));
+      rowTwo.push(parseFloat(arrayDataQ4[arrayIndex][2]));
+      rowThree.push(parseFloat(arrayDataQ4[arrayIndex][3]));
+      rowFour.push(parseFloat(arrayDataQ4[arrayIndex][4]));
+      rowFive.push(parseFloat(arrayDataQ4[arrayIndex][5]));
+      rowSix.push(parseFloat(arrayDataQ4[arrayIndex][6]));
+      rowSeven.push(parseFloat(arrayDataQ4[arrayIndex][7]));
+      rowEight.push(parseFloat(arrayDataQ4[arrayIndex][8]));
+      rowNine.push(parseFloat(arrayDataQ4[arrayIndex][9]));
+      rowTen.push(parseFloat(arrayDataQ4[arrayIndex][10]));
+      rowEleven.push(parseFloat(arrayDataQ4[arrayIndex][11]));
+      rowTwelve.push(parseFloat(arrayDataQ4[arrayIndex][12]));
+    }
+    if (arrayDataQ3 && arrayDataQ3.length > 0) {
+      chartHeader.push('Cuatrimestre 3');
+      rowOne.push(parseFloat(arrayDataQ3[arrayIndex][1]));
+      rowTwo.push(parseFloat(arrayDataQ3[arrayIndex][2]));
+      rowThree.push(parseFloat(arrayDataQ3[arrayIndex][3]));
+      rowFour.push(parseFloat(arrayDataQ3[arrayIndex][4]));
+      rowFive.push(parseFloat(arrayDataQ3[arrayIndex][5]));
+      rowSix.push(parseFloat(arrayDataQ3[arrayIndex][6]));
+      rowSeven.push(parseFloat(arrayDataQ3[arrayIndex][7]));
+      rowEight.push(parseFloat(arrayDataQ3[arrayIndex][8]));
+      rowNine.push(parseFloat(arrayDataQ3[arrayIndex][9]));
+      rowTen.push(parseFloat(arrayDataQ3[arrayIndex][10]));
+      rowEleven.push(parseFloat(arrayDataQ3[arrayIndex][11]));
+      rowTwelve.push(parseFloat(arrayDataQ3[arrayIndex][12]));
+    }
+    if (arrayDataQ2 && arrayDataQ2.length > 0) {
+      chartHeader.push('Cuatrimestre 2');
+      rowOne.push(parseFloat(arrayDataQ2[arrayIndex][1]));
+      rowTwo.push(parseFloat(arrayDataQ2[arrayIndex][2]));
+      rowThree.push(parseFloat(arrayDataQ2[arrayIndex][3]));
+      rowFour.push(parseFloat(arrayDataQ2[arrayIndex][4]));
+      rowFive.push(parseFloat(arrayDataQ2[arrayIndex][5]));
+      rowSix.push(parseFloat(arrayDataQ2[arrayIndex][6]));
+      rowSeven.push(parseFloat(arrayDataQ2[arrayIndex][7]));
+      rowEight.push(parseFloat(arrayDataQ2[arrayIndex][8]));
+      rowNine.push(parseFloat(arrayDataQ2[arrayIndex][9]));
+      rowTen.push(parseFloat(arrayDataQ2[arrayIndex][10]));
+      rowEleven.push(parseFloat(arrayDataQ2[arrayIndex][11]));
+      rowTwelve.push(parseFloat(arrayDataQ2[arrayIndex][12]));
+    }
+    if (arrayDataQ1 && arrayDataQ1.length > 0) {
+      chartHeader.push('Cuatrimestre 1');
+      rowOne.push(parseFloat(arrayDataQ1[arrayIndex][1]));
+      rowTwo.push(parseFloat(arrayDataQ1[arrayIndex][2]));
+      rowThree.push(parseFloat(arrayDataQ1[arrayIndex][3]));
+      rowFour.push(parseFloat(arrayDataQ1[arrayIndex][4]));
+      rowFive.push(parseFloat(arrayDataQ1[arrayIndex][5]));
+      rowSix.push(parseFloat(arrayDataQ1[arrayIndex][6]));
+      rowSeven.push(parseFloat(arrayDataQ1[arrayIndex][7]));
+      rowEight.push(parseFloat(arrayDataQ1[arrayIndex][8]));
+      rowNine.push(parseFloat(arrayDataQ1[arrayIndex][9]));
+      rowTen.push(parseFloat(arrayDataQ1[arrayIndex][10]));
+      rowEleven.push(parseFloat(arrayDataQ1[arrayIndex][11]));
+      rowTwelve.push(parseFloat(arrayDataQ1[arrayIndex][12]));
+    }
+    // Return final array
+    return [chartHeader, rowOne, rowTwo, rowThree, rowFour, rowFive, rowSix, rowSeven, rowEight, rowNine, rowTen, rowEleven, rowTwelve];
+  };
+
+  // Function that defines table options dynamically
+  function buildTableOptions(program, topic, minPoint, maxPoint) {
+    // Define title depending on program
+    if (program == '100') {
+      var definedTitle = '11100 Equipado UH';
+    }
+    else if (program == '101') {
+      var definedTitle = '11101 Unión-Equipado UH';
+    }
+    else if (program == '102') {
+      var definedTitle = '11102 Unión-Equipado UH';
+    }
+    else if (program == 'A320') {
+      var definedTitle = 'A320';
+    }
+    else if (program == 'A330') {
+      var definedTitle = 'A330';
+    }
+    else if (program == 'A350') {
+      var definedTitle = 'A350';
+    }
+    else if (program == 'S19') {
+      var definedTitle = 'S19';
+    }
+
+    // Define title depending on topic
+    if (topic == 'Total') {
+      definedTitle += ' Equipado UH Total (Horas A + Horas B + Horas C)';
+    }
+    else if (topic == 'HorasA') {
+      definedTitle += ' Equipado UH Horas A';
+    }
+    else if (topic == 'HorasB') {
+      definedTitle += ' Equipado UH Horas B';
+    }
+    else if (topic == 'HorasC') {
+      definedTitle += ' Equipado UH HorasC';
+    }
+    else if (topic == 'UnitTotal') {
+      definedTitle += ' Total UH (Horas A + Horas B + Horas C)';
+    }
+    else if (topic == 'Equipado') {
+      definedTitle += ' Equipado UH (Horas A + Horas B + Horas C)';
+    }
+    else if (topic == 'Pintura') {
+      definedTitle += ' Pintura UH (Horas A + Horas B + Horas C)';
+    }
+    else if (topic == 'TallerElectrico') {
+      definedTitle += ' Taller Eléctrico UH (Horas A + Horas B + Horas C)';
+    }
+    else if (topic == 'CuartoSellantes') {
+      definedTitle += ' Cuarto Sellantes UH (Horas A + Horas B + Horas C)';
+    }
+    else if (topic == 'MaterialesCompuestos') {
+      definedTitle += ' Materiales Compuestos UH (Horas A + Horas B + Horas C)';
+    }
+
+    // Define options to return
+    var optionsToReturn = {
+      title: definedTitle,
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minPoint, max: maxPoint}},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    // Return options
+    return optionsToReturn;
+  };
+
+  // Function that loads 11100 data
+  function loadCharts100() {
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraph100Total = buildDataTableArrays('100', 'Total');
+    var arrayLineGraph100HorasA = buildDataTableArrays('100', 'HorasA');
+    var arrayLineGraph100HorasB = buildDataTableArrays('100', 'HorasB');
+    var arrayLineGraph100HorasC = buildDataTableArrays('100', 'HorasC');
+
+    // Chart data
+    dataChart100Total = google.visualization.arrayToDataTable(arrayLineGraph100Total);
+    dataChart100HorasA = google.visualization.arrayToDataTable(arrayLineGraph100HorasA);
+    dataChart100HorasB = google.visualization.arrayToDataTable(arrayLineGraph100HorasB);
+    dataChart100HorasC = google.visualization.arrayToDataTable(arrayLineGraph100HorasC);
+
+    // Define min and max points for y-axis
+    var minMaxPointsTotal = findMinMaxPoints(arrayLineGraph100Total);
+    var minMaxPointsHorasA = findMinMaxPoints(arrayLineGraph100HorasA);
+    var minMaxPointsHorasB = findMinMaxPoints(arrayLineGraph100HorasB);
+    var minMaxPointsHorasC = findMinMaxPoints(arrayLineGraph100HorasC);
+
+    // Chart options
+    chartOptions100Total = buildTableOptions('100', 'Total', minMaxPointsTotal[0], minMaxPointsTotal[1]);
+    chartOptions100HorasA = buildTableOptions('100', 'HorasA', minMaxPointsHorasA[0], minMaxPointsHorasA[1]);
+    chartOptions100HorasB = buildTableOptions('100', 'HorasB', minMaxPointsHorasB[0], minMaxPointsHorasB[1]);
+    chartOptions100HorasC = buildTableOptions('100', 'HorasC', minMaxPointsHorasC[0], minMaxPointsHorasC[1]);
+  };
+
+  // Function that loads 11101 data
+  function loadCharts101() {
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraph101Total = buildDataTableArrays('101', 'Total');
+    var arrayLineGraph101HorasA = buildDataTableArrays('101', 'HorasA');
+    var arrayLineGraph101HorasB = buildDataTableArrays('101', 'HorasB');
+    var arrayLineGraph101HorasC = buildDataTableArrays('101', 'HorasC');
+
+    // Chart data
+    dataChart101Total = google.visualization.arrayToDataTable(arrayLineGraph101Total);
+    dataChart101HorasA = google.visualization.arrayToDataTable(arrayLineGraph101HorasA);
+    dataChart101HorasB = google.visualization.arrayToDataTable(arrayLineGraph101HorasB);
+    dataChart101HorasC = google.visualization.arrayToDataTable(arrayLineGraph101HorasC);
+
+    // Define min and max points for y-axis
+    var minMaxPointsTotal = findMinMaxPoints(arrayLineGraph101Total);
+    var minMaxPointsHorasA = findMinMaxPoints(arrayLineGraph101HorasA);
+    var minMaxPointsHorasB = findMinMaxPoints(arrayLineGraph101HorasB);
+    var minMaxPointsHorasC = findMinMaxPoints(arrayLineGraph101HorasC);
+
+    // Chart options
+    chartOptions101Total = buildTableOptions('101', 'Total', minMaxPointsTotal[0], minMaxPointsTotal[1]);
+    chartOptions101HorasA = buildTableOptions('101', 'HorasA', minMaxPointsHorasA[0], minMaxPointsHorasA[1]);
+    chartOptions101HorasB = buildTableOptions('101', 'HorasB', minMaxPointsHorasB[0], minMaxPointsHorasB[1]);
+    chartOptions101HorasC = buildTableOptions('101', 'HorasC', minMaxPointsHorasC[0], minMaxPointsHorasC[1]);
+  };
+
+  // Function that loads 11102 data
+  function loadCharts102() {
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraph102Total = buildDataTableArrays('102', 'Total');
+    var arrayLineGraph102HorasA = buildDataTableArrays('102', 'HorasA');
+    var arrayLineGraph102HorasB = buildDataTableArrays('102', 'HorasB');
+    var arrayLineGraph102HorasC = buildDataTableArrays('102', 'HorasC');
+
+    // Chart data
+    dataChart102Total = google.visualization.arrayToDataTable(arrayLineGraph102Total);
+    dataChart102HorasA = google.visualization.arrayToDataTable(arrayLineGraph102HorasA);
+    dataChart102HorasB = google.visualization.arrayToDataTable(arrayLineGraph102HorasB);
+    dataChart102HorasC = google.visualization.arrayToDataTable(arrayLineGraph102HorasC);
+
+    // Define min and max points for y-axis
+    var minMaxPointsTotal = findMinMaxPoints(arrayLineGraph102Total);
+    var minMaxPointsHorasA = findMinMaxPoints(arrayLineGraph102HorasA);
+    var minMaxPointsHorasB = findMinMaxPoints(arrayLineGraph102HorasB);
+    var minMaxPointsHorasC = findMinMaxPoints(arrayLineGraph102HorasC);
+
+    // Chart options
+    chartOptions102Total = buildTableOptions('102', 'Total', minMaxPointsTotal[0], minMaxPointsTotal[1]);
+    chartOptions102HorasA = buildTableOptions('102', 'HorasA', minMaxPointsHorasA[0], minMaxPointsHorasA[1]);
+    chartOptions102HorasB = buildTableOptions('102', 'HorasB', minMaxPointsHorasB[0], minMaxPointsHorasB[1]);
+    chartOptions102HorasC = buildTableOptions('102', 'HorasC', minMaxPointsHorasC[0], minMaxPointsHorasC[1]);
+  };
+
+  // Function that loads A320 data
+  function loadChartsA320() {
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraphA320UnitTotal = buildDataTableArrays('A320', 'UnitTotal');
+    var arrayLineGraphA320Equipado = buildDataTableArrays('A320', 'Equipado');
+    var arrayLineGraphA320Pintura = buildDataTableArrays('A320', 'Pintura');
+    var arrayLineGraphA320TallerElectrico = buildDataTableArrays('A320', 'TallerElectrico');
+    var arrayLineGraphA320CuartoSellantes = buildDataTableArrays('A320', 'CuartoSellantes');
+    var arrayLineGraphA320MaterialesCompuestos = buildDataTableArrays('A320', 'MaterialesCompuestos');
+
+    // Chart data
+    dataChartA320UnitTotal = google.visualization.arrayToDataTable(arrayLineGraphA320UnitTotal);
+    dataChartA320Equipado = google.visualization.arrayToDataTable(arrayLineGraphA320Equipado);
+    dataChartA320Pintura = google.visualization.arrayToDataTable(arrayLineGraphA320Pintura);
+    dataChartA320TallerElectrico = google.visualization.arrayToDataTable(arrayLineGraphA320TallerElectrico);
+    dataChartA320CuartoSellantes = google.visualization.arrayToDataTable(arrayLineGraphA320CuartoSellantes);
+    dataChartA320MaterialesCompuestos = google.visualization.arrayToDataTable(arrayLineGraphA320MaterialesCompuestos);
+
+    // Define min and max points for y-axis
+    var minMaxPointsUnitTotal = findMinMaxPoints(arrayLineGraphA320UnitTotal);
+    var minMaxPointsEquipado = findMinMaxPoints(arrayLineGraphA320Equipado);
+    var minMaxPointsPintura = findMinMaxPoints(arrayLineGraphA320Pintura);
+    var minMaxPointsTallerElectrico = findMinMaxPoints(arrayLineGraphA320TallerElectrico);
+    var minMaxPointsCuartoSellantes = findMinMaxPoints(arrayLineGraphA320CuartoSellantes);
+    var minMaxPointsMaterialesCompuestos = findMinMaxPoints(arrayLineGraphA320MaterialesCompuestos);
+    
+    // Chart options
+    chartOptionsA320UnitTotal = buildTableOptions('A320', 'UnitTotal', minMaxPointsUnitTotal[0], minMaxPointsUnitTotal[1]);
+    chartOptionsA320Equipado = buildTableOptions('A320', 'Equipado', minMaxPointsEquipado[0], minMaxPointsEquipado[1]);
+    chartOptionsA320Pintura = buildTableOptions('A320', 'Pintura', minMaxPointsPintura[0], minMaxPointsPintura[1]);
+    chartOptionsA320TallerElectrico = buildTableOptions('A320', 'TallerElectrico', minMaxPointsTallerElectrico[0], minMaxPointsTallerElectrico[1]);
+    chartOptionsA320CuartoSellantes = buildTableOptions('A320', 'CuartoSellantes', minMaxPointsCuartoSellantes[0], minMaxPointsCuartoSellantes[1]);
+    chartOptionsA320MaterialesCompuestos = buildTableOptions('A320', 'MaterialesCompuestos', minMaxPointsMaterialesCompuestos[0], minMaxPointsMaterialesCompuestos[1]);
+  };
+
+  // Function that loads A330 data
+  function loadChartsA330() {
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraphA330UnitTotal = buildDataTableArrays('A330', 'UnitTotal');
+    var arrayLineGraphA330Equipado = buildDataTableArrays('A330', 'Equipado');
+    var arrayLineGraphA330Pintura = buildDataTableArrays('A330', 'Pintura');
+    var arrayLineGraphA330TallerElectrico = buildDataTableArrays('A330', 'TallerElectrico');
+    var arrayLineGraphA330CuartoSellantes = buildDataTableArrays('A330', 'CuartoSellantes');
+    var arrayLineGraphA330MaterialesCompuestos = buildDataTableArrays('A330', 'MaterialesCompuestos');
+
+    // Chart data
+    dataChartA330UnitTotal = google.visualization.arrayToDataTable(arrayLineGraphA330UnitTotal);
+    dataChartA330Equipado = google.visualization.arrayToDataTable(arrayLineGraphA330Equipado);
+    dataChartA330Pintura = google.visualization.arrayToDataTable(arrayLineGraphA330Pintura);
+    dataChartA330TallerElectrico = google.visualization.arrayToDataTable(arrayLineGraphA330TallerElectrico);
+    dataChartA330CuartoSellantes = google.visualization.arrayToDataTable(arrayLineGraphA330CuartoSellantes);
+    dataChartA330MaterialesCompuestos = google.visualization.arrayToDataTable(arrayLineGraphA330MaterialesCompuestos);
+    
+    // Define min and max points for y-axis
+    var minMaxPointsUnitTotal = findMinMaxPoints(arrayLineGraphA330UnitTotal);
+    var minMaxPointsEquipado = findMinMaxPoints(arrayLineGraphA330Equipado);
+    var minMaxPointsPintura = findMinMaxPoints(arrayLineGraphA330Pintura);
+    var minMaxPointsTallerElectrico = findMinMaxPoints(arrayLineGraphA330TallerElectrico);
+    var minMaxPointsCuartoSellantes = findMinMaxPoints(arrayLineGraphA330CuartoSellantes);
+    var minMaxPointsMaterialesCompuestos = findMinMaxPoints(arrayLineGraphA330MaterialesCompuestos);
+    
+    // Chart options
+    chartOptionsA330UnitTotal = buildTableOptions('A330', 'UnitTotal', minMaxPointsUnitTotal[0], minMaxPointsUnitTotal[1]);
+    chartOptionsA330Equipado = buildTableOptions('A330', 'Equipado', minMaxPointsEquipado[0], minMaxPointsEquipado[1]);
+    chartOptionsA330Pintura = buildTableOptions('A330', 'Pintura', minMaxPointsPintura[0], minMaxPointsPintura[1]);
+    chartOptionsA330TallerElectrico = buildTableOptions('A330', 'TallerElectrico', minMaxPointsTallerElectrico[0], minMaxPointsTallerElectrico[1]);
+    chartOptionsA330CuartoSellantes = buildTableOptions('A330', 'CuartoSellantes', minMaxPointsCuartoSellantes[0], minMaxPointsCuartoSellantes[1]);
+    chartOptionsA330MaterialesCompuestos = buildTableOptions('A330', 'MaterialesCompuestos', minMaxPointsMaterialesCompuestos[0], minMaxPointsMaterialesCompuestos[1]);
+  };
+
+  // Function that loads A350 data
+  function loadChartsA350() {
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraphA350UnitTotal = buildDataTableArrays('A350', 'UnitTotal');
+    var arrayLineGraphA350Equipado = buildDataTableArrays('A350', 'Equipado');
+    var arrayLineGraphA350Pintura = buildDataTableArrays('A350', 'Pintura');
+    var arrayLineGraphA350TallerElectrico = buildDataTableArrays('A350', 'TallerElectrico');
+    var arrayLineGraphA350CuartoSellantes = buildDataTableArrays('A350', 'CuartoSellantes');
+    var arrayLineGraphA350MaterialesCompuestos = buildDataTableArrays('A350', 'MaterialesCompuestos');
+
+    // Chart data
+    dataChartA350UnitTotal = google.visualization.arrayToDataTable(arrayLineGraphA350UnitTotal);
+    dataChartA350Equipado = google.visualization.arrayToDataTable(arrayLineGraphA350Equipado);
+    dataChartA350Pintura = google.visualization.arrayToDataTable(arrayLineGraphA350Pintura);
+    dataChartA350TallerElectrico = google.visualization.arrayToDataTable(arrayLineGraphA350TallerElectrico);
+    dataChartA350CuartoSellantes = google.visualization.arrayToDataTable(arrayLineGraphA350CuartoSellantes);
+    dataChartA350MaterialesCompuestos = google.visualization.arrayToDataTable(arrayLineGraphA350MaterialesCompuestos);
+    
+    // Define min and max points for y-axis
+    var minMaxPointsUnitTotal = findMinMaxPoints(arrayLineGraphA350UnitTotal);
+    var minMaxPointsEquipado = findMinMaxPoints(arrayLineGraphA350Equipado);
+    var minMaxPointsPintura = findMinMaxPoints(arrayLineGraphA350Pintura);
+    var minMaxPointsTallerElectrico = findMinMaxPoints(arrayLineGraphA350TallerElectrico);
+    var minMaxPointsCuartoSellantes = findMinMaxPoints(arrayLineGraphA350CuartoSellantes);
+    var minMaxPointsMaterialesCompuestos = findMinMaxPoints(arrayLineGraphA350MaterialesCompuestos);
+    
+    // Chart options
+    chartOptionsA350UnitTotal = buildTableOptions('A350', 'UnitTotal', minMaxPointsUnitTotal[0], minMaxPointsUnitTotal[1]);
+    chartOptionsA350Equipado = buildTableOptions('A350', 'Equipado', minMaxPointsEquipado[0], minMaxPointsEquipado[1]);
+    chartOptionsA350Pintura = buildTableOptions('A350', 'Pintura', minMaxPointsPintura[0], minMaxPointsPintura[1]);
+    chartOptionsA350TallerElectrico = buildTableOptions('A350', 'TallerElectrico', minMaxPointsTallerElectrico[0], minMaxPointsTallerElectrico[1]);
+    chartOptionsA350CuartoSellantes = buildTableOptions('A350', 'CuartoSellantes', minMaxPointsCuartoSellantes[0], minMaxPointsCuartoSellantes[1]);
+    chartOptionsA350MaterialesCompuestos = buildTableOptions('A350', 'MaterialesCompuestos', minMaxPointsMaterialesCompuestos[0], minMaxPointsMaterialesCompuestos[1]);
+  };
+
+  // Function that loads S19 data
+  function loadChartsS19() {
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraphS19UnitTotal = buildDataTableArrays('S19', 'UnitTotal');
+    var arrayLineGraphS19Pintura = buildDataTableArrays('S19', 'Pintura');
+    var arrayLineGraphS19CuartoSellantes = buildDataTableArrays('S19', 'CuartoSellantes');
+
+    // Chart data
+    dataChartS19UnitTotal = google.visualization.arrayToDataTable(arrayLineGraphS19UnitTotal);
+    dataChartS19Pintura = google.visualization.arrayToDataTable(arrayLineGraphS19Pintura);
+    dataChartS19CuartoSellantes = google.visualization.arrayToDataTable(arrayLineGraphS19CuartoSellantes);
+
+    // Define min and max points for y-axis
+    var minMaxPointsUnitTotal = findMinMaxPoints(arrayLineGraphS19UnitTotal);
+    var minMaxPointsPintura = findMinMaxPoints(arrayLineGraphS19Pintura);
+    var minMaxPointsCuartoSellantes = findMinMaxPoints(arrayLineGraphS19CuartoSellantes);
+    
+    // Chart options
+    chartOptionsS19UnitTotal = buildTableOptions('S19', 'UnitTotal', minMaxPointsUnitTotal[0], minMaxPointsUnitTotal[1]);
+    chartOptionsS19Pintura = buildTableOptions('S19', 'Pintura', minMaxPointsPintura[0], minMaxPointsPintura[1]);
+    chartOptionsS19CuartoSellantes = buildTableOptions('S19', 'CuartoSellantes', minMaxPointsCuartoSellantes[0], minMaxPointsCuartoSellantes[1]);
+  };
+
+  // Function that draws charts
+  function drawCharts(chartData, chartOptions) {
+    // Create chart
+    workloadChart = new google.visualization.LineChart(document.getElementById('lineChart'));
+    
+    // Format chart
+    var numberFormatter = new google.visualization.NumberFormat({ decimalSymbol: ',' });
+    for (let i = 1; i < chartData.getNumberOfColumns(); i++) {
+      numberFormatter.format(chartData, i);
+    };
+
+    // Draw chart
+    workloadChart.draw(chartData, google.charts.Line.convertOptions(chartOptions));
+  };
+
+  // Function that changes month being displayed
+  function changeMonth(newMonthIndex) {
+    // Update monthIndex
+    monthIndex = newMonthIndex;
+
+    // Change data cards
+    changeCards();
+
+    // Change selected button
+    formatButtons('months');
+  };
+
+  // Function that changes line chart being shown
+  function changeProgram(program) {
+    // Update global variable
+    currentProgram = program;
+
+    // Force current topic if it´s necessary (when changing from certain programs to other programs) - Reutilize to change title as well
+    if (currentProgram == '100' | currentProgram == '101' | currentProgram == '102') {
+      if (currentTopic == 'UnitTotal' | currentTopic == 'Equipado' | currentTopic == 'Pintura' | currentTopic == 'TallerElectrico' | currentTopic == 'CuartoSellantes' | currentTopic == 'MaterialesCompuestos') {
+        currentTopic = 'Total';
+      }
+    }
+    else {
+      if (currentProgram == 'A320' | currentProgram == 'A330' | currentProgram == 'A350') {
+        if (currentTopic == 'Total' | currentTopic == 'HorasA' | currentTopic == 'HorasB' | currentTopic == 'HorasC') {
+          currentTopic = 'UnitTotal';
+        }
+      }
+      else {
+        if (currentTopic == 'Total' | currentTopic == 'HorasA' | currentTopic == 'HorasB' | currentTopic == 'HorasC' | currentTopic == 'Equipado' | currentTopic == 'TallerElectrico' | currentTopic == 'MaterialesCompuestos') {
+          currentTopic = 'UnitTotal';
+        }
+      }
+    }
+
+    // Draw chart depending on program and topic
+    drawCharts(eval('dataChart' + currentProgram + currentTopic), eval('chartOptions' + currentProgram + currentTopic));
+
+    // Change data cards
+    changeCards();
+    
+    // Change selected button
+    formatButtons('program');
+    formatButtons('topic');
+  };
+
+  // Function that changes the data cards being shown
+  function changeCards() {
+    // Choose which data to display depending on current program and quarter
+    var actualData = eval('workloadData' + currentProgram + '.ActualValues');
+    if (currentQuarter == 'Q1') {
+      var targetData = eval('workloadData' + currentProgram + '.TargetValues1');
+    }
+    else if (currentQuarter == 'Q2') {
+      var targetData = eval('workloadData' + currentProgram + '.TargetValues2');
+    }
+    else if (currentQuarter == 'Q3') {
+      var targetData = eval('workloadData' + currentProgram + '.TargetValues3');
+    }
+    else if (currentQuarter == 'Q4') {
+      var targetData = eval('workloadData' + currentProgram + '.TargetValues4');
+    }    
+    
+    // Define auxiliary lists for revealing and concealing card data
+    var topics = ['Total', 'HorasA', 'HorasB', 'HorasC', 'UnitTotal', 'Equipado', 'Pintura', 'TallerElectrico', 'CuartoSellantes', 'MaterialesCompuestos'];
+    var cards = ['Actual', 'Target', 'Gap'];
+
+    // Set title
+    if (currentProgram == '100') {
+      document.getElementById('dataCardsTitle').innerHTML = 'Equipado Unit Hours (YtD)';
+    }
+    else if (currentProgram == '101' | currentProgram == '102') {
+      document.getElementById('dataCardsTitle').innerHTML = 'Unión-Equipado Unit Hours (YtD)';
+    }
+    else {
+      document.getElementById('dataCardsTitle').innerHTML = 'Unit Hours (YtD)';
+    }
+    
+    if (currentProgram == '100' | currentProgram == '101' | currentProgram == '102') {
+      // Conceal undesired data and reveal desired data
+      topics.forEach((topic) => {
+        cards.forEach((card) => {
+          if (topic == 'Total' | topic == 'HorasA' |  topic == 'HorasB' |  topic == 'HorasC') {
+            document.getElementById('data' + topic + card).style.display = "block";
+          }
+          else {
+            document.getElementById('data' + topic + card).style.display = "none";
+          }
+        })
+      });
+
+      // Write new data cards
+      // === Total ===
+      document.getElementById("dataTotalActual").innerHTML = "Total: " + (actualData[3][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataTotalTarget").innerHTML = "Total: ---<br><br>";
+        document.getElementById("dataTotalGap").innerHTML = "Total: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataTotalTarget").innerHTML = "Total: " + (targetData[3][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataTotalGap").innerHTML = "Total: " + (targetData[3][monthIndex+1] - actualData[3][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[3][monthIndex+1] - actualData[3][monthIndex+1] > 0) {
+          document.getElementById("dataTotalGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataTotalGap").style.color = '#008000';
+        }
+        else if (targetData[3][monthIndex+1] - actualData[3][monthIndex+1] < 0) {
+          document.getElementById("dataTotalGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataTotalGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataTotalGap").innerHTML += '<br><br>';
+          document.getElementById("dataTotalGap").style.color = '#ffa500';
+        }
+      }
+      
+      // === Horas A ===
+      document.getElementById("dataHorasAActual").innerHTML = "Horas A: " + (actualData[0][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter = 'Q0') {
+        document.getElementById("dataHorasATarget").innerHTML = "Horas A: ---<br><br>";
+        document.getElementById("dataHorasAGap").innerHTML = "Horas A: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataHorasATarget").innerHTML = "Horas A: " + (targetData[0][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataHorasAGap").innerHTML = "Horas A: " + (targetData[0][monthIndex+1] - actualData[0][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[0][monthIndex+1] - actualData[0][monthIndex+1] > 0) {
+          document.getElementById("dataHorasAGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataHorasAGap").style.color = '#008000';
+        }
+        else if (targetData[0][monthIndex+1] - actualData[0][monthIndex+1] < 0) {
+          document.getElementById("dataHorasAGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataHorasAGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataHorasAGap").innerHTML += '<br><br>';
+          document.getElementById("dataHorasAGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Horas B ===
+      document.getElementById("dataHorasBActual").innerHTML = "Horas B: " + (actualData[1][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataHorasBTarget").innerHTML = "Horas B: ---<br><br>";
+        document.getElementById("dataHorasBGap").innerHTML = "Horas B: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataHorasBTarget").innerHTML = "Horas B: " + (targetData[1][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataHorasBGap").innerHTML = "Horas B: " + (targetData[1][monthIndex+1] - actualData[1][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[1][monthIndex+1] - actualData[1][monthIndex+1] > 0) {
+          document.getElementById("dataHorasBGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataHorasBGap").style.color = '#008000';
+        }
+        else if (targetData[1][monthIndex+1] - actualData[1][monthIndex+1] < 0) {
+          document.getElementById("dataHorasBGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataHorasBGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataHorasBGap").innerHTML += '<br><br>';
+          document.getElementById("dataHorasBGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Horas C ===
+      document.getElementById("dataHorasCActual").innerHTML = "Horas C: " + (actualData[2][monthIndex+1]).toLocaleString('es-ES') + "<br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataHorasCTarget").innerHTML = "Horas C: ---<br>";
+        document.getElementById("dataHorasCGap").innerHTML = "Horas C: ---<br>";
+      }
+      else {
+        document.getElementById("dataHorasCTarget").innerHTML = "Horas C: " + (targetData[2][monthIndex+1]).toLocaleString('es-ES') + "<br>";
+        document.getElementById("dataHorasCGap").innerHTML = "Horas C: " + (targetData[2][monthIndex+1] - actualData[2][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[2][monthIndex+1] - actualData[2][monthIndex+1] > 0) {
+          document.getElementById("dataHorasCGap").innerHTML += ' &uarr;<br>';   // Arrow up
+          document.getElementById("dataHorasCGap").style.color = '#008000';
+        }
+        else if (targetData[2][monthIndex+1] - actualData[2][monthIndex+1] < 0) {
+          document.getElementById("dataHorasCGap").innerHTML += ' &darr;<br>';   // Arrow down
+          document.getElementById("dataHorasCGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataHorasCGap").innerHTML += '<br>';
+          document.getElementById("dataHorasCGap").style.color = '#ffa500';
+        }
+      }
+    }
+    else if (currentProgram == 'A320' | currentProgram == 'A330' | currentProgram == 'A350') {
+      // Conceal undesired data and reveal desired data
+      topics.forEach((topic) => {
+        cards.forEach((card) => {
+          if (topic == 'Total' | topic == 'HorasA' |  topic == 'Horas B' |  topic == 'HorasC') {
+            document.getElementById('data' + topic + card).style.display = "none";
+          }
+          else {
+            document.getElementById('data' + topic + card).style.display = "block";
+          }
+        })
+      });
+
+      // Write new data cards
+      // === Total ===
+      document.getElementById("dataUnitTotalActual").innerHTML = "Total: " + (actualData[5][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataUnitTotalTarget").innerHTML = "Total: ---<br><br>";
+        document.getElementById("dataUnitTotalGap").innerHTML = "Total: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataUnitTotalTarget").innerHTML = "Total: " + (targetData[5][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataUnitTotalGap").innerHTML = "Total: " + (targetData[5][monthIndex+1] - actualData[5][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[5][monthIndex+1] - actualData[5][monthIndex+1] > 0) {
+          document.getElementById("dataUnitTotalGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataUnitTotalGap").style.color = '#008000';
+        }
+        else if (targetData[5][monthIndex+1] - actualData[5][monthIndex+1] < 0) {
+          document.getElementById("dataUnitTotalGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataUnitTotalGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataUnitTotalGap").innerHTML += '<br><br>';
+          document.getElementById("dataUnitTotalGap").style.color = '#ffa500';
+        }
+      }
+      
+      // === Equipado ===
+      document.getElementById("dataEquipadoActual").innerHTML = "Equipado: " + (actualData[0][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataEquipadoTarget").innerHTML = "Equipado: ---<br><br>";
+        document.getElementById("dataEquipadoGap").innerHTML = "Equipado: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataEquipadoTarget").innerHTML = "Equipado: " + (targetData[0][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataEquipadoGap").innerHTML = "Equipado: " + (targetData[0][monthIndex+1] - actualData[0][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[0][monthIndex+1] - actualData[0][monthIndex+1] > 0) {
+          document.getElementById("dataEquipadoGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataEquipadoGap").style.color = '#008000';
+        }
+        else if (targetData[0][monthIndex+1] - actualData[0][monthIndex+1] < 0) {
+          document.getElementById("dataEquipadoGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataEquipadoGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataEquipadoGap").innerHTML += '<br><br>';
+          document.getElementById("dataEquipadoGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Pintura ===
+      document.getElementById("dataPinturaActual").innerHTML = "Pintura: " + (actualData[1][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataPinturaTarget").innerHTML = "Pintura: ---<br><br>";
+        document.getElementById("dataPinturaGap").innerHTML = "Pintura: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataPinturaTarget").innerHTML = "Pintura: " + (targetData[1][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataPinturaGap").innerHTML = "Pintura: " + (targetData[1][monthIndex+1] - actualData[1][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[1][monthIndex+1] - actualData[1][monthIndex+1] > 0) {
+          document.getElementById("dataPinturaGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataPinturaGap").style.color = '#008000';
+        }
+        else if (targetData[1][monthIndex+1] - actualData[1][monthIndex+1] < 0) {
+          document.getElementById("dataPinturaGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataPinturaGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataPinturaGap").innerHTML += '<br><br>';
+          document.getElementById("dataPinturaGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Taller Eléctrico ===
+      document.getElementById("dataTallerElectricoActual").innerHTML = "T. Eléctrico: " + (actualData[2][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataTallerElectricoTarget").innerHTML = "T. Eléctrico: ---<br><br>";
+        document.getElementById("dataTallerElectricoGap").innerHTML = "T. Eléctrico: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataTallerElectricoTarget").innerHTML = "T. Eléctrico: " + (targetData[2][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataTallerElectricoGap").innerHTML = "T. Eléctrico: " + (targetData[2][monthIndex+1] - actualData[2][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[2][monthIndex+1] - actualData[2][monthIndex+1] > 0) {
+          document.getElementById("dataTallerElectricoGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataTallerElectricoGap").style.color = '#008000';
+        }
+        else if (targetData[2][monthIndex+1] - actualData[2][monthIndex+1] < 0) {
+          document.getElementById("dataTallerElectricoGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataTallerElectricoGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataTallerElectricoGap").innerHTML += '<br><br>';
+          document.getElementById("dataTallerElectricoGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Cuarto Sellantes ===
+      document.getElementById("dataCuartoSellantesActual").innerHTML = "C. Sellantes: " + (actualData[3][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataCuartoSellantesTarget").innerHTML = "C. Sellantes: ---<br><br>";
+        document.getElementById("dataCuartoSellantesGap").innerHTML = "C. Sellantes: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataCuartoSellantesTarget").innerHTML = "C. Sellantes: " + (targetData[3][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataCuartoSellantesGap").innerHTML = "C. Sellantes: " + (targetData[3][monthIndex+1] - actualData[3][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[3][monthIndex+1] - actualData[3][monthIndex+1] > 0) {
+          document.getElementById("dataCuartoSellantesGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataCuartoSellantesGap").style.color = '#008000';
+        }
+        else if (targetData[3][monthIndex+1] - actualData[3][monthIndex+1] < 0) {
+          document.getElementById("dataCuartoSellantesGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataCuartoSellantesGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataCuartoSellantesGap").innerHTML += '<br><br>';
+          document.getElementById("dataCuartoSellantesGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Materiales Compuestos ===
+      document.getElementById("dataMaterialesCompuestosActual").innerHTML = "M. Compuestos: " + (actualData[4][monthIndex+1]).toLocaleString('es-ES') + "<br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataMaterialesCompuestosTarget").innerHTML = "M. Compuestos: ---<br>";
+        document.getElementById("dataMaterialesCompuestosGap").innerHTML = "M. Compuestos: ---<br>";
+      }
+      else {
+        document.getElementById("dataMaterialesCompuestosTarget").innerHTML = "M. Compuestos: " + (targetData[4][monthIndex+1]).toLocaleString('es-ES') + "<br>";
+        document.getElementById("dataMaterialesCompuestosGap").innerHTML = "M. Compuestos: " + (targetData[4][monthIndex+1] - actualData[4][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[4][monthIndex+1] - actualData[4][monthIndex+1] > 0) {
+          document.getElementById("dataMaterialesCompuestosGap").innerHTML += ' &uarr;<br>';   // Arrow up
+          document.getElementById("dataMaterialesCompuestosGap").style.color = '#008000';
+        }
+        else if (targetData[4][monthIndex+1] - actualData[4][monthIndex+1] < 0) {
+          document.getElementById("dataMaterialesCompuestosGap").innerHTML += ' &darr;<br>';   // Arrow down
+          document.getElementById("dataMaterialesCompuestosGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataMaterialesCompuestosGap").innerHTML += '<br>';
+          document.getElementById("dataMaterialesCompuestosGap").style.color = '#ffa500';
+        }
+      }
+    }
+    else {
+      // Conceal undesired data and reveal desired data
+      topics.forEach((topic) => {
+        cards.forEach((card) => {
+          if (topic == 'UnitTotal' | topic == 'Pintura' |  topic == 'CuartoSellantes') {
+            document.getElementById('data' + topic + card).style.display = "block";
+          }
+          else {
+            document.getElementById('data' + topic + card).style.display = "none";
+          }
+        })
+      });
+      
+      // Write new data cards
+      // === Total ===
+      document.getElementById("dataUnitTotalActual").innerHTML = "Total: " + (actualData[2][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataUnitTotalTarget").innerHTML = "Total: ---<br><br>";
+        document.getElementById("dataUnitTotalGap").innerHTML = "Total: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataUnitTotalTarget").innerHTML = "Total: " + (targetData[2][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataUnitTotalGap").innerHTML = "Total: " + (targetData[2][monthIndex+1] - actualData[2][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[2][monthIndex+1] - actualData[2][monthIndex+1] > 0) {
+          document.getElementById("dataUnitTotalGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataUnitTotalGap").style.color = '#008000';
+        }
+        else if (targetData[2][monthIndex+1] - actualData[2][monthIndex+1] < 0) {
+          document.getElementById("dataUnitTotalGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataUnitTotalGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataUnitTotalGap").innerHTML += '<br><br>';
+          document.getElementById("dataUnitTotalGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Pintura ===
+      document.getElementById("dataPinturaActual").innerHTML = "Pintura: " + (actualData[0][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataPinturaTarget").innerHTML = "Pintura: ---<br><br>";
+        document.getElementById("dataPinturaGap").innerHTML = "Pintura: ---<br><br>";
+      }
+      else {
+        document.getElementById("dataPinturaTarget").innerHTML = "Pintura: " + (targetData[0][monthIndex+1]).toLocaleString('es-ES') + "<br><br>";
+        document.getElementById("dataPinturaGap").innerHTML = "Pintura: " + (targetData[0][monthIndex+1] - actualData[0][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[0][monthIndex+1] - actualData[0][monthIndex+1] > 0) {
+          document.getElementById("dataPinturaGap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+          document.getElementById("dataPinturaGap").style.color = '#008000';
+        }
+        else if (targetData[0][monthIndex+1] - actualData[0][monthIndex+1] < 0) {
+          document.getElementById("dataPinturaGap").innerHTML += ' &darr;<br><br>';   // Arrow down
+          document.getElementById("dataPinturaGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataPinturaGap").innerHTML += '<br><br>';
+          document.getElementById("dataPinturaGap").style.color = '#ffa500';
+        }
+      }
+
+      // === Cuarto Sellantes ===
+      document.getElementById("dataCuartoSellantesActual").innerHTML = "C. Sellantes: " + (actualData[1][monthIndex+1]).toLocaleString('es-ES') + "<br>";
+      
+      // Display target and GAP if not in Q0 case
+      if (currentQuarter == 'Q0') {
+        document.getElementById("dataCuartoSellantesTarget").innerHTML = "C. Sellantes: ---<br>";
+        document.getElementById("dataCuartoSellantesGap").innerHTML = "C. Sellantes: ---<br>";
+      }
+      else {
+        document.getElementById("dataCuartoSellantesTarget").innerHTML = "C. Sellantes: " + (targetData[1][monthIndex+1]).toLocaleString('es-ES') + "<br>";
+        document.getElementById("dataCuartoSellantesGap").innerHTML = "C. Sellantes: " + (targetData[1][monthIndex+1] - actualData[1][monthIndex+1]).toLocaleString('es-ES', { maximumSignificantDigits: 3 });
+        // Format GAP color
+        if (targetData[1][monthIndex+1] - actualData[1][monthIndex+1] > 0) {
+          document.getElementById("dataCuartoSellantesGap").innerHTML += ' &uarr;<br>';   // Arrow up
+          document.getElementById("dataCuartoSellantesGap").style.color = '#008000';
+        }
+        else if (targetData[1][monthIndex+1] - actualData[1][monthIndex+1] < 0) {
+          document.getElementById("dataCuartoSellantesGap").innerHTML += ' &darr;<br>';   // Arrow down
+          document.getElementById("dataCuartoSellantesGap").style.color = '#ff0000';
+        }
+        else {
+          document.getElementById("dataCuartoSellantesGap").innerHTML += '<br>';
+          document.getElementById("dataCuartoSellantesGap").style.color = '#ffa500';
+        }
+      }
+    }
+  };
+
+  // Function that changes the chart topic displayed depending on the buttons pressed
+  function changeChartTopic(topic) {
+    // Set current topic variable depending on the current program
+    if (currentProgram == 'S19') {
+      if (topic == 'Equipado' | topic == 'TallerElectrico' | topic == 'MaterialesCompuestos') {
+        return;
+      }
+    }
+
+    currentTopic = topic;
+
+    // Change line chart data and options depending on topic
+    drawCharts(eval('dataChart' + currentProgram + currentTopic), eval('chartOptions' + currentProgram + currentTopic));
+  
+    // Change selected button
+    formatButtons('topic');
+  };
+
+  // Call function to load the page
+  loadPage();
+
+  // Redraw charts on window resize
+  $(window).resize(function(){
+    if (currentProgram && currentTopic) {
+      drawCharts(eval('dataChart' + currentProgram + currentTopic), eval('chartOptions' + currentProgram + currentTopic));
+    }
+  });
+</script>

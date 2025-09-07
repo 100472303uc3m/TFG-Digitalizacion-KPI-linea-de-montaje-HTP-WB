@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <?!= include('BootstrapCSS'); ?>
+
+    <!-- Bootstrap JS -->
+    <?!= include('BootstrapJS'); ?>
+
+  </head>
+  <body>
+    <!-- Loading Spinner Overlay -->
+    <div class="d-flex justify-content-center align-items-center" id='overlay' style="height: 100vh">
+      <div class="spinner-border m-3" role="status"></div>
+      <strong class="loading-text" id="overlay-text">Por favor espere...</strong>
+    </div>
+
+    <!-- Page -->
+    <div id="page" style="display: none;">
+
+      <!-- Navigation bar -->
+      {{NAVBAR}}
+
+      <!-- Top Bar -->
+      <nav class="nav-scroller bg-light box-shadow border-bottom position-fixed mb-3" style="width: 100%; z-index: 1000;">
+        <nav class='nav nav-underline'>
+          <div class="container-fluid text-center">
+            <div class='row'>
+              <!-- Buttons -->
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate"  id='btn-ene' onclick='changeMonth(0)'>Ene</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-feb' onclick='changeMonth(1)'>Feb</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-mar' onclick='changeMonth(2)'>Mar</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-abr' onclick='changeMonth(3)'>Abr</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-may' onclick='changeMonth(4)'>May</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-jun' onclick='changeMonth(5)'>Jun</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-jul' onclick='changeMonth(6)'>Jul</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-ago' onclick='changeMonth(7)'>Ago</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-sep' onclick='changeMonth(8)'>Sep</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-oct' onclick='changeMonth(9)'>Oct</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-nov' onclick='changeMonth(10)'>Nov</button>
+              </div>
+              <div class='col-1'>
+                <button type="button" class="btn btn-block text-truncate" id='btn-dic' onclick='changeMonth(11)'>Dic</button>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </nav>
+
+      <!-- Content -->
+      <div class='container-fluid'>
+        <div class='row'>
+
+          <!-- Sidebar -->
+          <nav class="col-md-2 d-none d-md-block bg-white sidebar border-right">
+            <div class="sidebar position-fixed" style="left: 6%; top: 15%;">
+              <ul class="nav flex-column">
+                <!-- Buttons -->
+                <li class='nav-item  mt-3 mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-497' onclick='changeProgram("497")'>11497</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinner497'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-495' onclick='changeProgram("495")'>11495</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinner495'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-479' onclick='changeProgram("479")'>11479</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinner479'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='border'></li>
+                <li class='nav-item  mt-3 mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-A320' onclick='changeProgram("A320")'>A320</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinnerA320'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-A330' onclick='changeProgram("A330")'>A330</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinnerA330'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-A350' onclick='changeProgram("A350")'>A350</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinnerA350'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+                <li class='nav-item mb-3'>
+                  <button type="button" class="btn btn-block text-truncate" id='btn-S19' onclick='changeProgram("S19")'>S19</button>
+                </li>
+                <div class="d-flex justify-content-center align-items-center" id='spinnerS19'>
+                  <div class="spinner-grow spinner-grow-sm mb-3" role="status"></div>
+                </div>
+              </ul>
+            </div>
+          </nav>
+
+          <!-- Main -->
+          <main role='main' class='col-md-9 ml-sm auto col-lg-10 pt-5 px-4'>
+
+            <!-- Data Cards -->
+            <div class="row m-3 border-bottom">
+              <h4 id="dataCardsTitle"></h4>
+            </div>
+            <div class='row m-2'>
+              <div class="col-4">
+                <div class='card shadow-sm'>
+                  <h6 class='card-header text-center'>Actual + Forecast</h6>
+                  <div class='card-body'>
+                    <div class="row m-2">
+                      <div class="col-12">
+                        <h6 class="card-subtitle" id='dataTotalActual'></h6>
+                        <h6 class="card-subtitle" id='dataSATActual'></h6>
+                        <h6 class="card-subtitle" id='dataRSActual'></h6>
+                        <h6 class="card-subtitle" id='dataNSTRCActual'></h6>
+                        <h6 class="card-subtitle" id='dataUnitTotalActual'></h6>
+                        <h6 class="card-subtitle" id='dataEquipadoActual'></h6>
+                        <h6 class="card-subtitle" id='dataPinturaActual'></h6>
+                        <h6 class="card-subtitle" id='dataTallerElectricoActual'></h6>
+                        <h6 class="card-subtitle" id='dataCuartoSellantesActual'></h6>
+                        <h6 class="card-subtitle" id='dataMaterialesCompuestosActual'></h6>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class='card shadow-sm'>
+                  <h6 class='card-header text-center' id="targetCard"></h6>
+                  <div class='card-body'>
+                    <div class="row m-2">
+                      <div class="col-12">
+                        <h6 class="card-subtitle text-muted" id='dataTotalTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataSATTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataRSTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataNSTRCTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataUnitTotalTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataEquipadoTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataPinturaTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataTallerElectricoTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataCuartoSellantesTarget'></h6>
+                        <h6 class="card-subtitle text-muted" id='dataMaterialesCompuestosTarget'></h6>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class='card shadow-sm'>
+                  <h6 class='card-header text-center'>GAP</h6>
+                  <div class='card-body'>
+                    <div class="row m-2">
+                      <div class="col-12">
+                        <h6 class="card-subtitle" id='dataTotalGap'></h6>
+                        <h6 class="card-subtitle" id='dataSATGap'></h6>
+                        <h6 class="card-subtitle" id='dataRSGap'></h6>
+                        <h6 class="card-subtitle" id='dataNSTRCGap'></h6>
+                        <h6 class="card-subtitle" id='dataUnitTotalGap'></h6>
+                        <h6 class="card-subtitle" id='dataEquipadoGap'></h6>
+                        <h6 class="card-subtitle" id='dataPinturaGap'></h6>
+                        <h6 class="card-subtitle" id='dataTallerElectricoGap'></h6>
+                        <h6 class="card-subtitle" id='dataCuartoSellantesGap'></h6>
+                        <h6 class="card-subtitle" id='dataMaterialesCompuestosGap'></h6>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Line -->
+            <div class="row mt-5 mx-2 mb-3 border-bottom">
+              <h4>Data Evo.</h4>
+            </div>
+            <div class="row mt-2">
+              <!-- Buttons -->
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-Total' onclick='changeChartTopic("Total")'>Total</button>
+              </div>
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-SAT' onclick='changeChartTopic("SAT")'>SAT</button>
+              </div>
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-RS' onclick='changeChartTopic("RS")'>RS</button>
+              </div>
+              <div class="col-3">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-NSTRC' onclick='changeChartTopic("NSTRC")'>NST RC</button>
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-2">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-UnitTotal' onclick='changeChartTopic("UnitTotal")'>Total</button>
+              </div>
+              <div class="col-2">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-Equipado' onclick='changeChartTopic("Equipado")'>Equipado</button>
+              </div>
+              <div class="col-2">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-Pintura' onclick='changeChartTopic("Pintura")'>Pintura</button>
+              </div>
+              <div class="col-2">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-TallerElectrico' onclick='changeChartTopic("TallerElectrico")'>T. Eléctrico</button>
+              </div>
+              <div class="col-2">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-CuartoSellantes' onclick='changeChartTopic("CuartoSellantes")'>C. Sellantes</button>
+              </div>
+              <div class="col-2">
+                <button type="button" class="btn btn-block btn-outline-dark shadow-sm text-truncate" id='btn-MaterialesCompuestos' onclick='changeChartTopic("MaterialesCompuestos")'>M. Compuestos</button>
+              </div>              
+            </div>
+            <div class='row m-2'>
+              <!-- Chart -->
+              <div class="d-flex justify-content-center align-items-center" id='lineGraphSpinner'>
+                <div class="spinner-border m-3" role="status"></div>
+              </div>
+              <div id='lineChart'></div>
+            </div>
+            
+          </main>
+        </div>
+      </div>
+    </div>
+    <!-- Script -->
+    <?!= include('WorkloadScript'); ?>
+  </body>
+</html>

@@ -1,0 +1,1305 @@
+<script>
+  google.charts.load('current', {'packages':['corechart', 'line', 'table'], 'language': 'es'});
+
+  // === Global variables ===
+  // Data variables
+  var dataComparisonTable100PlantillaTable;
+  var dataComparisonTable100Fte;
+  var dataComparisonTable100Comp;
+  var dataComparisonTable100Report;
+  var dataComparisonTable101PlantillaTable;
+  var dataComparisonTable101Fte;
+  var dataComparisonTable101Comp;
+  var dataComparisonTable101Report;
+  var dataComparisonTable102PlantillaTable;
+  var dataComparisonTable102Fte;
+  var dataComparisonTable102Comp;
+  var dataComparisonTable102Report;
+  var dataComparisonTable103PlantillaTable;
+  var dataComparisonTable103Comp;
+  var dataComparisonTable103Report;
+
+  var dataLineGraph100PlantillaLine;
+  var dataLineGraph100CompPerc;
+  var dataLineGraph100Indicador1;
+  var dataLineGraph100Indicador2;
+  var dataLineGraph101PlantillaLine;
+  var dataLineGraph101CompPerc;
+  var dataLineGraph101Indicador1;
+  var dataLineGraph101Indicador2;
+  var dataLineGraph102PlantillaLine;
+  var dataLineGraph102CompPerc;
+  var dataLineGraph102Indicador1;
+  var dataLineGraph102Indicador2;
+  var dataLineGraph103PlantillaLinePintura;
+  var dataLineGraph103PlantillaLineTallerElectrico;
+  var dataLineGraph103PlantillaLineCuartoSellantess;
+
+  // Chart variables
+  var chartComparisonTable;
+  var chartComparisonTableReport;
+  var chartLineGraph;
+  var lineOptions100PlantillaLine;
+  var lineOptions100CompPerc;
+  var lineOptions100Indicador1;
+  var lineOptions100Indicador2;
+  var lineOptions101PlantillaLine;
+  var lineOptions101CompPerc;
+  var lineOptions101Indicador1;
+  var lineOptions101Indicador2;
+  var lineOptions102PlantillaLine;
+  var lineOptions102CompPerc;
+  var lineOptions102Indicador1;
+  var lineOptions102Indicador2;
+  var lineOptions103PlantillaLinePintura;
+  var lineOptions103PlantillaLineTallerElectrico;
+  var lineOptions103PlantillaLineCuartoSellantes;
+
+  var tableOptions = {
+    alternatingRowStyle: true, 
+    width: '100%',
+    height: '100%',
+    allowHtml: true
+  };
+
+  // Data point variables
+  var point1;
+  var point2;
+  var point3;
+  var point4;
+  var point5;
+  var point6;
+  var point7;
+  var point8;
+  var point9;
+  var point10;
+  var point11;
+  var point12;
+
+  // Auxiliary variables
+  var productiveTime100;
+  var productiveTime101;
+  var productiveTime102;
+  var productiveTime103;
+  var reportHours;
+  var currentProgram;
+  var currentTableTopic;
+  var currentLineTopic;
+  var programParameter;
+  var sheetIdParameter;
+  var monthIndex;
+  var fteExpandedState = {}; 
+  var compExpandedState = {};
+
+  // Function that defines chart points
+  function defineChartPoints() {
+    // Define chart points
+    for (let n = 1; n < 13; n++) {
+      if (n <= monthIndex) {
+        eval('point' + n + '= "point { fill-color: blue; }"');
+      }
+      else {
+        eval('point' + n + '= "point { fill-color: green; shape-type: square; size: 5 }"');
+      }
+    }
+  };
+
+  // Function that finds min points for chart vertical axis depending on data points
+  function findMinMaxPoints(dataArray) {
+    // Find the min and max points in the array
+    var minPoint = dataArray[1][1];
+    var maxPoint = 0;
+    for (var row = 0; row < dataArray.length; row++) {
+      for (var col = 0; col < dataArray[0].length; col++) {
+        if (typeof dataArray[row][col] === 'number') {
+          if (dataArray[row][col] < minPoint) {
+            minPoint = dataArray[row][col];
+          }
+          if (dataArray[row][col] > maxPoint) {
+            maxPoint = dataArray[row][col];
+          }
+        }
+      }
+    }
+
+    // Calculate mean point
+    var meanPoint = (minPoint + maxPoint) / 2;
+
+    // Return vertical axis minimum and maximum values
+    if (minPoint - (meanPoint / 2) < 0) {
+      return [0, maxPoint + (meanPoint / 2)];
+    }
+    return [minPoint - (meanPoint / 2), maxPoint + (meanPoint / 2)];
+  };
+
+  // Function that suppresses the loading overlay and shows the page
+  function showPage() {
+    // Get element
+    var overlay = document.getElementById("overlay");
+    var page = document.getElementById("page");
+
+    // We only suppress the element once
+    if (overlay != null) {
+      overlay.remove();   // Remove overlay
+      page.style.display = "block";   // Make page visible
+    }
+  };
+
+  // Function that handles errors when retreiving 11100UH data
+  function errorHandler(error) {
+    // Log the error for debugging
+    console.log('ERROR: ' + error.message);
+
+    // Display warning
+    document.getElementById('overlay-text').innerHTML = '!';
+  };
+
+  // Function that handles all the logic for loading the initial state of the page
+  function initPage(program) {
+    // Define current productive time
+    eval('var currentProductiveTime = productiveTime' + program);
+
+    // Define month index IF we are in the initial state
+    if (currentProgram == undefined) {
+      eval('monthIndex = productiveTime' + program + '.MonthIndex;');
+      console.log('Month Index: ' + monthIndex);
+      defineChartPoints();
+    }
+
+    // Remove comparison table and line graph spinner
+    if (document.getElementById('lineGraphSpinner') && document.getElementById('comparisonTableSpinner')) {
+      document.getElementById('lineGraphSpinner').remove();
+      document.getElementById('comparisonTableSpinner').remove();
+    }
+        
+    // Load chart data
+    eval('loadCharts' + program + '();');
+    
+    // Remove loading spinner
+    document.getElementById('spinner' + program).remove();
+
+    // Prepare the display of rest of the page IF we are in the initial state
+    if (currentProgram == undefined) {
+      // Initialize current program
+      currentProgram = program;
+
+      // Define title for target card
+      document.getElementById('targetCard').innerHTML = 'Target';
+      
+      // Load reports data
+      google.script.run.withSuccessHandler(loadReports).withFailureHandler(errorHandler).getReports(sheetIdParameter);
+
+      // Auxiliary list for data loading and display setting
+      programsList = ['100', '101', '102', '103'];
+
+      // Hide other buttons until the data has finished loading
+      programsList.forEach((element) => {
+        if (element != program) {
+          document.getElementById('btn-' + element).style.display = 'none';
+        }
+      });
+
+      // Suppress loading overlay
+      showPage();
+
+      // Write data on data cards
+      changeCards();
+
+      // Try drawing
+      const drawInterval = setInterval(function() {
+        // Auxiliary variables
+        if (program == '103') {
+          eval('var chartDataPintura = dataLineGraph' + program + 'PlantillaLinePintura;');
+          eval('var chartDataTallerElectrico = dataLineGraph' + program + 'PlantillaLineTallerElectrico;');
+          eval('var chartDataCuartoSellantes = dataLineGraph' + program + 'PlantillaLineCuartoSellantes;');
+          eval('var optionsDataPintura = lineOptions' + program + 'PlantillaLinePintura;');
+          eval('var optionsDataTallerElectrico = lineOptions' + program + 'PlantillaLineTallerElectrico;');
+          eval('var optionsDataCuartoSellantes = lineOptions' + program + 'PlantillaLineCuartoSellantes;');
+        }
+        else {
+          eval('var chartData = dataLineGraph' + program + 'PlantillaLine;');
+          eval('var optionsData = lineOptions' + program + 'PlantillaLine;');
+        }
+        eval('var tableData = dataComparisonTable' + program + 'PlantillaTable;');
+
+        // Try drawing
+        if (program == '103') {
+          if (chartDataPintura && chartDataTallerElectrico && chartDataCuartoSellantes && optionsDataPintura && optionsDataTallerElectrico && optionsDataCuartoSellantes && tableData) {
+            eval('drawTableCharts(dataComparisonTable' + program + 'PlantillaTable, tableOptions, "comparisonTable");');
+            eval('drawLineCharts(dataLineGraph' + program + 'PlantillaLinePintura, lineOptions' + program + 'PlantillaLinePintura, "lineGraphPintura");');
+            eval('drawLineCharts(dataLineGraph' + program + 'PlantillaLineTallerElectrico, lineOptions' + program + 'PlantillaLineTallerElectrico, "lineGraphTallerElectrico");');
+            eval('drawLineCharts(dataLineGraph' + program + 'PlantillaLineCuartoSellantes, lineOptions' + program + 'PlantillaLineCuartoSellantes, "lineGraphCuartoSellantes");');
+            clearInterval(drawInterval);
+          }
+        }
+        else {
+          if (chartData && optionsData && tableData) {
+            eval('drawTableCharts(dataComparisonTable' + program + 'PlantillaTable, tableOptions, "comparisonTable");');
+            eval('drawLineCharts(dataLineGraph' + program + 'PlantillaLine, lineOptions' + program + 'PlantillaLine, "lineGraph");');
+            clearInterval(drawInterval);
+          }
+        }
+      }, 1000);
+
+      // Format buttons in top/side bars on start
+      formatButtons('months');
+      formatButtons('program');
+      formatButtons('tableTopic');
+      formatButtons('lineTopic');
+
+      // Load rest of data for page
+      programsList.forEach((element) => {
+        if (element != program) {
+          eval('google.script.run.withFailureHandler(errorHandler).withSuccessHandler(load' + element + 'Comp).getCompetitiviness("' + sheetIdParameter + '", "' + element + '")');
+        }
+      });
+    }
+    else {
+      // Try initializing respective routing report data table
+      const reportInterval = setInterval(function() {
+        // Auxiliary variables
+        eval('var hoursData = productiveTime' + program + ';');
+
+        // Try creating reports data
+        if (hoursData && reportHours) {
+          createReport(program);
+          // Display button as data has finished loading
+          document.getElementById('btn-' + program).style.display = 'block';
+          clearInterval(reportInterval);
+        }
+      }, 1000);
+    }
+  };
+
+  // Function that loads 11100 Comp data
+  function load100Comp(returnedData) {
+    // Initialize global variables
+    productiveTime100 = returnedData;
+
+    console.log('Finished loading 11100 Comp data!');
+
+    // Load initial page
+    initPage('100');
+  };
+
+  // Function that loads 11101 Comp data
+  function load101Comp(returnedData) {
+    // Initialize global variables
+    productiveTime101 = returnedData;
+
+    console.log('Finished loading 11101 Comp data!');
+
+    // Load initial page
+    initPage('101')
+  };
+
+  // Function that loads 11102 Comp data
+  function load102Comp(returnedData) {
+    // Initialize global variables
+    productiveTime102 = returnedData;
+
+    console.log('Finished loading 11102 Comp data!');
+
+    // Load initial page
+    initPage('102')
+  };
+
+  // Function that loads 11103 Comp data
+  function load103Comp(returnedData) {
+    // Initialize global variables
+    productiveTime103 = returnedData;
+
+    console.log('Finished loading 11103 Comp data!');
+
+    // Load initial page
+    initPage('103')
+  };
+
+  // Function that loads reports data
+  function loadReports(returnedData) {
+    // Set global variable
+    reportHours = returnedData;
+    console.log('Finished loading reports!')
+    
+    // Create routing report comparison table of current program
+    createReport(currentProgram);
+
+    // Delete routing report spinner
+    document.getElementById('reportSpinner').remove();
+
+    // Draw routing report
+    eval('drawTableCharts(dataComparisonTable' + currentProgram + 'Report, tableOptions, "reportTable");');
+  };
+
+  // Function that loads spreadsheet data and loads initial page state - async
+  function loadPage() {
+    // Set current topic variables
+    currentTableTopic = 'PlantillaTable';
+    currentLineTopic = 'PlantillaLine';
+
+    // Check URL params to decide which data to load
+    google.script.url.getLocation(function(location) {
+      programParameter = location.parameter.program;
+      sheetIdParameter = location.parameter.sheetId;
+      console.log("URL Program Parameter: " + programParameter);
+      console.log("URL Sheet ID Parameter: " + sheetIdParameter);
+
+      // Load petitioned data only (speeds up initial load time)
+      if (programParameter == 'first') {
+        google.script.run.withSuccessHandler(load100Comp).withFailureHandler(errorHandler).getCompetitiviness(sheetIdParameter, '100');
+      }
+      else if (programParameter == 'second') {
+        google.script.run.withSuccessHandler(load101Comp).withFailureHandler(errorHandler).getCompetitiviness(sheetIdParameter, '101');
+      }
+      else if (programParameter == 'third') { 
+        google.script.run.withSuccessHandler(load102Comp).withFailureHandler(errorHandler).getCompetitiviness(sheetIdParameter, '102');
+      }
+      else {  // Rather load something arbitrary in case of error
+        google.script.run.withSuccessHandler(load103Comp).withFailureHandler(errorHandler).getCompetitiviness(sheetIdParameter, '103');
+      }
+    });
+  };
+
+  // Function that formats the color of the text in the top/side bar buttons
+  function formatButtons(selectedMode) {
+    // Only format necessary buttons
+    if (selectedMode == 'months') {
+      // Auxiliary list
+      var months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic',];
+
+      // Change button colors to gray
+      months.forEach((month) => {
+        document.getElementById('btn-' + month).style.color = "#A9A9A9";
+      });
+
+      // Change selected month button color to black
+      selectedMonth = months[monthIndex];
+      document.getElementById('btn-' + selectedMonth).style.color = 'black';
+    }
+    else if (selectedMode == 'program') {
+      // Auxiliary lists
+      var programs = ['100', '101', '102', '103'];
+      var topics = ['Fte', 'CompPerc', 'Indicador1', 'Indicador2'];
+
+      // Change button colors to gray
+      programs.forEach((program) => {
+        document.getElementById('btn-' + program).style.color = "#A9A9A9";
+      });
+
+      document.getElementById('btn-' + currentProgram).style.color = "black";
+      
+      // Strike-through buttons that aren´t available in the 11103 program view
+      if (currentProgram == '103') {
+        topics.forEach((topic) => {
+          document.getElementById('btn-' + topic).style.textDecorationLine = "line-through";
+        });
+      }
+      else {
+        topics.forEach((topic) => {
+          document.getElementById('btn-' + topic).style.textDecorationLine = "none";
+        });
+      }
+    }
+    else if (selectedMode == 'tableTopic') {
+      // Auxiliary list
+      var topics = ['PlantillaTable', 'Fte', 'Comp'];
+
+      // Change button colors to gray
+      topics.forEach((topic) => {
+        document.getElementById('btn-' + topic).style.color = "#A9A9A9";
+      });
+
+      // Change selected table topic button color to black
+      document.getElementById('btn-' + currentTableTopic).style.color = 'black';
+    }
+    else if (selectedMode == 'lineTopic') {
+      // Auxiliary list
+      var topics = ['PlantillaLine', 'CompPerc', 'Indicador1', 'Indicador2'];
+
+      // Change button colors to gray
+      topics.forEach((topic) => {
+        document.getElementById('btn-' + topic).style.color = "#A9A9A9";
+      });
+
+      // Change selected program button color to black
+      document.getElementById('btn-' + currentLineTopic).style.color = 'black';
+    }
+  };
+
+  // Function that builds table chart data arrays dynamically 
+  // Function that builds line chart data arrays dynamically
+  function buildTableDataArrays(program, topic) {
+    var arrayData = eval('productiveTime' + program);
+    const programDictionary = {
+      '100': 'A320 Equipado HTP',
+      '101': 'A330 Equipado HTP',
+      '102': 'A350 Equipado HTP',
+      '103': 'Secciones Auxiliares'
+    };
+
+    var tableData, chartHeader;
+    if (topic === 'PlantillaTable') {
+      tableData = arrayData.PlantillaValues;
+      chartHeader = [programDictionary[program], 'Actual + Forecast'];
+    } 
+    else if (topic === 'Fte') {
+      tableData = arrayData.CompFteValues;
+      chartHeader = ['11' + program + ' Comp YtD (FTE)', 'Actual + Forecast'];
+    } 
+    else if (topic === 'Comp') {
+      tableData = arrayData.CompValues;
+      chartHeader = [programDictionary[program], 'Actual + Forecast'];
+    }
+
+    var rows = [];
+    var expandedState = topic === 'Fte' ? fteExpandedState : topic === 'Comp' ? compExpandedState : {};
+    var currentParentId = null;
+
+    var plantillaCount = 0;
+
+    // Only insert PINTURA once at the very beginning if program is 103
+    if (program === '103') {
+      rows.push(['PINTURA', null]);
+    }
+
+    for (let i = 0; i < tableData.length; i++) {
+      var currentTitle = tableData[i][0] || '';
+      var nextTitle = (i + 1 < tableData.length) ? tableData[i + 1][0] : '';
+      var isCurrentDropdown = !currentTitle.includes('-') && nextTitle.includes('-');
+      var value = (monthIndex < tableData[i].length) ? tableData[i][monthIndex] : null;
+
+      // Push the actual row
+      if (isCurrentDropdown) {
+        currentParentId = currentTitle;
+        rows.push([
+          expandedState[currentParentId] ? '▲ ' + currentTitle : '▼ ' + currentTitle,
+          value
+        ]);
+      } 
+      else if (currentTitle.includes('-')) {
+        if (expandedState[currentParentId]) {
+          rows.push([currentTitle, value]);
+        }
+      } 
+      else {
+        currentParentId = null;
+        rows.push([currentTitle, value]);
+      }
+
+      // After PLANTILLA rows, conditionally add the extra rows
+      if (program === '103' && currentTitle.toUpperCase() === 'PLANTILLA') {
+        plantillaCount++;
+        if (plantillaCount === 1) {
+          rows.push(['TALLER ELÉCTRICO', null]);
+        } 
+        else if (plantillaCount === 2) {
+          rows.push(['CUARTO SELLANTES', null]);
+        }
+      }
+    }
+
+    // Return array
+    return [chartHeader, ...rows];
+  };
+
+  // Function that formats the cell colors and borders of tables
+  function formatTableCells(plantillaTable, compTable, fteTable) {
+    const grayStyle = 'background-color: #f2f2f2';
+    const borderStyle = 'border-bottom: 1px solid;';
+    
+    // === Format PLANTILLA ===
+    if (plantillaTable) {
+      for (let row = 0; row < plantillaTable.getNumberOfRows(); row++) {
+        var title = plantillaTable.getValue(row, 0);
+        
+        if (['PINTURA', 'TALLER ELÉCTRICO', 'CUARTO SELLANTES'].includes(title)) {
+          for (let col = 0; col < plantillaTable.getNumberOfColumns(); col++) {
+            plantillaTable.setProperties(row, col, { style: 'background-color: #cceeff' });
+          }
+        } 
+        else if (['GAP (Carga-Capacidad)', 'PLANTILLA TOTAL'].includes(title)) {
+          for (let col = 0; col < plantillaTable.getNumberOfColumns(); col++) {
+            plantillaTable.setProperties(row, col, { style: 'border-top: 1px solid;' });
+          }
+        } 
+        else if (title.includes('-')) {
+          for (let col = 0; col < plantillaTable.getNumberOfColumns(); col++) {
+            plantillaTable.setProperties(row, col, { style: 'color: gray;' });
+          }
+        }
+      }
+    }
+
+    // === Helper: Apply dynamic formatting to Comp or FTE ===
+    function formatExpandableTable(table, expandedState) {
+      for (let row = 0; row < table.getNumberOfRows(); row++) {
+        var title = table.getValue(row, 0);
+        var isDropdown = title.startsWith('▼ ') || title.startsWith('▲ ');
+        var label = isDropdown ? title.slice(2) : null;
+
+        // Format GAP column if present
+        if (table.getNumberOfColumns() === 4 && !isNaN(parseFloat(table.getValue(row, 3)))) {
+          var gap = parseFloat(table.getValue(row, 3).replace(',', '.'));
+          var colorFormat = 'background-color: #ffd280;'; // Default yellow
+          if (gap < 0) colorFormat = 'background-color: #ff8080;';
+          else if (gap > 0) colorFormat = 'background-color: #99ff99;';
+          table.setProperties(row, 3, { style: colorFormat });
+        }
+
+        // Apply formatting to hidden rows (those that include '-')
+        if (title.includes('-')) {
+          for (let col = 0; col < table.getNumberOfColumns(); col++) {
+            table.setProperties(row, col, { style: grayStyle });
+          }
+        }
+
+        // Apply border to end of a group
+        if (isDropdown && expandedState[label]) {
+          // Find next non-sub row to draw a bottom border on the last sub-row
+          var subRow = row + 1;
+          while (subRow < table.getNumberOfRows()) {
+            var subTitle = table.getValue(subRow, 0);
+            if (!subTitle.includes('-')) break;
+            subRow++;
+          }
+          var lastSubRow = subRow - 1;
+          if (lastSubRow > row) {
+            for (let col = 0; col < table.getNumberOfColumns(); col++) {
+              table.setProperties(lastSubRow, col, { style: borderStyle });
+            }
+          }
+        }
+      }
+    }
+
+    if (compTable) formatExpandableTable(compTable, compExpandedState);
+    if (fteTable)  formatExpandableTable(fteTable, fteExpandedState);
+  };
+
+  // Function that modifies the data inside the Comp and Comp FTE table charts to recreate an accordion style table (expandable)
+  function modifyTableDataArrays(selectedRow) {
+    var dataTable = eval('dataComparisonTable' + currentProgram + currentTableTopic);
+    var clickedLabel = dataTable.getValue(selectedRow, 0);
+    var isExpandable = clickedLabel.startsWith('▼ ') || clickedLabel.startsWith('▲ ');
+
+    if (isExpandable) {
+      var label = clickedLabel.slice(2); // Remove arrow
+      var stateDict = currentTableTopic === 'Fte' ? fteExpandedState : compExpandedState;
+      stateDict[label] = !stateDict[label]; // Toggle
+
+      var arrayData = buildTableDataArrays(currentProgram, currentTableTopic);
+      eval('dataComparisonTable' + currentProgram + currentTableTopic + ' = google.visualization.arrayToDataTable(arrayData);');
+
+      // Reapply styles
+      if (currentTableTopic === 'Fte') {
+        formatTableCells(null, null, eval('dataComparisonTable' + currentProgram + 'Fte'));
+      } 
+      else if (currentTableTopic === 'Comp') {
+        formatTableCells(null, eval('dataComparisonTable' + currentProgram + 'Comp'), null);
+      }
+
+      drawTableCharts(eval('dataComparisonTable' + currentProgram + currentTableTopic), tableOptions, 'comparisonTable');
+    }
+  };
+
+  // Function that builds line chart data arrays dynamically
+  function buildLineDataArrays(program, topic) {
+    // Auxiliary variables
+    eval('var arrayData = productiveTime' + program);
+
+    // Define chart header
+    var chartHeader = ['Mes', 'Actual + Forecast', {'type': 'string', 'role': 'style'}]
+
+    // Define rows depending on topic
+    if (topic == 'PlantillaLine') {
+      var tableData = arrayData.PlantillaValues;
+      var arrayIndex = 13;
+    }
+    else if (topic == 'CompPerc') {
+      var tableData = arrayData.CompValues;
+      var arrayIndex = 0;
+    }
+    else if (topic == 'Indicador1') {
+      var tableData = arrayData.CompValues;
+      var arrayIndex = 1;
+    }
+    else if (topic == 'Indicador2') {
+      var tableData = arrayData.CompValues;
+      var arrayIndex = 2;
+    }
+    else if (topic == 'PlantillaLinePintura') {
+      var tableData = arrayData.PlantillaValues;
+      var arrayIndex = 12;
+    }
+    else if (topic == 'PlantillaLineTallerElectrico') {
+      var tableData = arrayData.PlantillaValues;
+      var arrayIndex = 25;
+    }
+    else if (topic == 'PlantillaLineCuartoSellantes') {
+      var tableData = arrayData.PlantillaValues;
+      var arrayIndex = 38;
+    }
+    
+    // Helper to parse numbers with commas as decimals
+    function parseNumber(value) {
+      if (typeof value === "string") {
+        return parseFloat(value.replace(",", "."));
+      }
+      return parseFloat(value);
+    }
+
+    // Define rows
+    var rowOne = ['Ene', parseNumber(tableData[arrayIndex][1]), point1];
+    var rowTwo = ['Feb', parseNumber(tableData[arrayIndex][2]), point2];
+    var rowThree = ['Mar', parseNumber(tableData[arrayIndex][3]), point3];
+    var rowFour = ['Abr', parseNumber(tableData[arrayIndex][4]), point4];
+    var rowFive = ['May', parseNumber(tableData[arrayIndex][5]), point5];
+    var rowSix = ['Jun', parseNumber(tableData[arrayIndex][6]), point6];
+    var rowSeven = ['Jul', parseNumber(tableData[arrayIndex][7]), point7];
+    var rowEight = ['Ago', parseNumber(tableData[arrayIndex][8]), point8];
+    var rowNine = ['Sep', parseNumber(tableData[arrayIndex][9]), point9];
+    var rowTen = ['Oct', parseNumber(tableData[arrayIndex][10]), point10];
+    var rowEleven = ['Nov', parseNumber(tableData[arrayIndex][11]), point11];
+    var rowTwelve = ['Dic', parseNumber(tableData[arrayIndex][12]), point12];
+
+    // Append additional data in case of Comp, Indicador 1 or Indicador 2
+    if (topic == 'CompPerc' || topic == 'Indicador1' || topic == 'Indicador2') {
+      chartHeader.push('Target');
+      rowOne.push(parseNumber(tableData[arrayIndex][1 + 13]));
+      rowTwo.push(parseNumber(tableData[arrayIndex][2 + 13]));
+      rowThree.push(parseNumber(tableData[arrayIndex][3 + 13]));
+      rowFour.push(parseNumber(tableData[arrayIndex][4 + 13]));
+      rowFive.push(parseNumber(tableData[arrayIndex][5 + 13]));
+      rowSix.push(parseNumber(tableData[arrayIndex][6 + 13]));
+      rowSeven.push(parseNumber(tableData[arrayIndex][7 + 13]));
+      rowEight.push(parseNumber(tableData[arrayIndex][8 + 13]));
+      rowNine.push(parseNumber(tableData[arrayIndex][9 + 13]));
+      rowTen.push(parseNumber(tableData[arrayIndex][10 + 13]));
+      rowEleven.push(parseNumber(tableData[arrayIndex][11 + 13]));
+      rowTwelve.push(parseNumber(tableData[arrayIndex][12 + 13]));
+    }
+
+    // Return final array
+    return [chartHeader, rowOne, rowTwo, rowThree, rowFour, rowFive, rowSix, rowSeven, rowEight, rowNine, rowTen, rowEleven, rowTwelve];
+  };
+
+  // Function that loads 11100 data
+  function loadCharts100() {
+    // === Table ==============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayTableGraph100PlantillaTable = buildTableDataArrays('100', 'PlantillaTable');
+    var arrayTableGraph100Fte = buildTableDataArrays('100', 'Fte');
+    var arrayTableGraph100Comp = buildTableDataArrays('100', 'Comp');
+    
+    // Table data
+    dataComparisonTable100PlantillaTable = google.visualization.arrayToDataTable(arrayTableGraph100PlantillaTable);
+    dataComparisonTable100Fte = google.visualization.arrayToDataTable(arrayTableGraph100Fte);
+    dataComparisonTable100Comp = google.visualization.arrayToDataTable(arrayTableGraph100Comp);
+
+    // Format table cells
+    formatTableCells(dataComparisonTable100PlantillaTable, dataComparisonTable100Comp, dataComparisonTable100Fte);
+
+    // === Line ===============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraph100PlantillaLine = buildLineDataArrays('100', 'PlantillaLine');
+    var arrayLineGraph100CompPerc = buildLineDataArrays('100', 'CompPerc');
+    var arrayLineGraph100Indicador1 = buildLineDataArrays('100', 'Indicador1');
+    var arrayLineGraph100Indicador2 = buildLineDataArrays('100', 'Indicador2');
+
+    // Line graphs data
+    dataLineGraph100PlantillaLine = google.visualization.arrayToDataTable(arrayLineGraph100PlantillaLine);
+    dataLineGraph100CompPerc = google.visualization.arrayToDataTable(arrayLineGraph100CompPerc);
+    dataLineGraph100Indicador1 = google.visualization.arrayToDataTable(arrayLineGraph100Indicador1);
+    dataLineGraph100Indicador2 = google.visualization.arrayToDataTable(arrayLineGraph100Indicador2);
+
+    // Define min points for y-axis
+    var minMaxPointsPlantillaLine = findMinMaxPoints(arrayLineGraph100PlantillaLine);
+    var minMaxPointsCompPerc = findMinMaxPoints(arrayLineGraph100CompPerc);
+    var minMaxPointsIndicador1 = findMinMaxPoints(arrayLineGraph100Indicador1);
+    var minMaxPointsIndicador2 = findMinMaxPoints(arrayLineGraph100Indicador2);
+
+    // Line graphs options
+    lineOptions100PlantillaLine = {
+      title: '11100 Plantilla',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsPlantillaLine[0], max: minMaxPointsPlantillaLine[1] }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions100CompPerc = {
+      title: '11100 Comp %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsCompPerc[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions100Indicador1 = {
+      title: '11100 Indicador 1 %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsIndicador1[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions100Indicador2 = {
+      title: '11100 Indicador 2 %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsIndicador2[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+  };
+
+  // Function that loads 11101 data
+  function loadCharts101() {
+    // === Table ==============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayTableGraph101PlantillaTable = buildTableDataArrays('101', 'PlantillaTable');
+    var arrayTableGraph101Fte = buildTableDataArrays('101', 'Fte');
+    var arrayTableGraph101Comp = buildTableDataArrays('101', 'Comp');
+
+    // Table data
+    dataComparisonTable101PlantillaTable = google.visualization.arrayToDataTable(arrayTableGraph101PlantillaTable);
+    dataComparisonTable101Fte = google.visualization.arrayToDataTable(arrayTableGraph101Fte);
+    dataComparisonTable101Comp = google.visualization.arrayToDataTable(arrayTableGraph101Comp);
+
+    // Format table cells
+    formatTableCells(dataComparisonTable101PlantillaTable, dataComparisonTable101Comp, dataComparisonTable101Fte);
+
+    // === Line ===============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraph101PlantillaLine = buildLineDataArrays('101', 'PlantillaLine');
+    var arrayLineGraph101CompPerc = buildLineDataArrays('101', 'CompPerc');
+    var arrayLineGraph101Indicador1 = buildLineDataArrays('101', 'Indicador1');
+    var arrayLineGraph101Indicador2 = buildLineDataArrays('101', 'Indicador2');
+
+    // Line graphs data
+    dataLineGraph101PlantillaLine = google.visualization.arrayToDataTable(arrayLineGraph101PlantillaLine);
+    dataLineGraph101CompPerc = google.visualization.arrayToDataTable(arrayLineGraph101CompPerc);
+    dataLineGraph101Indicador1 = google.visualization.arrayToDataTable(arrayLineGraph101Indicador1);
+    dataLineGraph101Indicador2 = google.visualization.arrayToDataTable(arrayLineGraph101Indicador2);
+
+    // Define min points for y-axis
+    var minMaxPointsPlantillaLine = findMinMaxPoints(arrayLineGraph101PlantillaLine);
+    var minMaxPointsCompPerc = findMinMaxPoints(arrayLineGraph101CompPerc);
+    var minMaxPointsIndicador1 = findMinMaxPoints(arrayLineGraph101Indicador1);
+    var minMaxPointsIndicador2 = findMinMaxPoints(arrayLineGraph101Indicador2);
+    
+    // Line graphs options
+    lineOptions101PlantillaLine = {
+      title: '11101 Plantilla',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsPlantillaLine[0], max: minMaxPointsPlantillaLine[1] }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions101CompPerc = {
+      title: '11101 Comp %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsCompPerc[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions101Indicador1 = {
+      title: '11101 Indicador 1 %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsIndicador1[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions101Indicador2 = {
+      title: '11101 Indicador 2 %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsIndicador2[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+  };
+
+  // Function that loads 11102 data
+  function loadCharts102() {
+    // === Table ==============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayTableGraph102PlantillaTable = buildTableDataArrays('102', 'PlantillaTable');
+    var arrayTableGraph102Fte = buildTableDataArrays('102', 'Fte');
+    var arrayTableGraph102Comp = buildTableDataArrays('102', 'Comp');
+    
+    // Table data
+    dataComparisonTable102PlantillaTable = google.visualization.arrayToDataTable(arrayTableGraph102PlantillaTable);
+    dataComparisonTable102Fte = google.visualization.arrayToDataTable(arrayTableGraph102Fte);
+    dataComparisonTable102Comp = google.visualization.arrayToDataTable(arrayTableGraph102Comp);
+
+    // Format table cells
+    formatTableCells(dataComparisonTable102PlantillaTable, dataComparisonTable102Comp, dataComparisonTable102Fte);
+
+    // === Line ===============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraph102PlantillaLine = buildLineDataArrays('102', 'PlantillaLine');
+    var arrayLineGraph102CompPerc = buildLineDataArrays('102', 'CompPerc');
+    var arrayLineGraph102Indicador1 = buildLineDataArrays('102', 'Indicador1');
+    var arrayLineGraph102Indicador2 = buildLineDataArrays('102', 'Indicador2');
+
+    // Line graphs data
+    dataLineGraph102PlantillaLine = google.visualization.arrayToDataTable(arrayLineGraph102PlantillaLine);
+    dataLineGraph102CompPerc = google.visualization.arrayToDataTable(arrayLineGraph102CompPerc);
+    dataLineGraph102Indicador1 = google.visualization.arrayToDataTable(arrayLineGraph102Indicador1);
+    dataLineGraph102Indicador2 = google.visualization.arrayToDataTable(arrayLineGraph102Indicador2);
+
+    // Define min points for y-axis
+    var minMaxPointsPlantillaLine = findMinMaxPoints(arrayLineGraph102PlantillaLine);
+    var minMaxPointsCompPerc = findMinMaxPoints(arrayLineGraph102CompPerc);
+    var minMaxPointsIndicador1 = findMinMaxPoints(arrayLineGraph102Indicador1);
+    var minMaxPointsIndicador2 = findMinMaxPoints(arrayLineGraph102Indicador2);
+
+    // Line graphs options
+    lineOptions102PlantillaLine = {
+      title: '11102 Plantilla',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsPlantillaLine[0], max: minMaxPointsPlantillaLine[1] }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions102CompPerc = {
+      title: '11102 Comp %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsCompPerc[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions102Indicador1 = {
+      title: '11102 Indicador 1 %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsIndicador1[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions102Indicador2 = {
+      title: '11102 Indicador 2 %',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsIndicador2[0], max: 1 }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+  };
+
+  // Function that loads 11103 data
+  function loadCharts103() {
+    // === Table ==============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayTableGraph103PlantillaTable = buildTableDataArrays('103', 'PlantillaTable');
+    var arrayTableGraph103Comp = buildTableDataArrays('103', 'Comp');
+
+    // Table data
+    dataComparisonTable103PlantillaTable = google.visualization.arrayToDataTable(arrayTableGraph103PlantillaTable);
+    dataComparisonTable103Comp = google.visualization.arrayToDataTable(arrayTableGraph103Comp);
+    
+    // Format table cells
+    formatTableCells(dataComparisonTable103PlantillaTable, dataComparisonTable103Comp, null);
+
+    // === Line ===============================================================================================
+    // Initialize data table arrays depending on defined quarters
+    var arrayLineGraph103PlantillaLinePintura = buildLineDataArrays('103', 'PlantillaLinePintura');
+    var arrayLineGraph103PlantillaLineTallerElectrico = buildLineDataArrays('103', 'PlantillaLineTallerElectrico');
+    var arrayLineGraph103PlantillaLineCuartoSellantes = buildLineDataArrays('103', 'PlantillaLineCuartoSellantes');
+
+    // Line graphs data
+    dataLineGraph103PlantillaLinePintura = google.visualization.arrayToDataTable(arrayLineGraph103PlantillaLinePintura);
+    dataLineGraph103PlantillaLineTallerElectrico = google.visualization.arrayToDataTable(arrayLineGraph103PlantillaLineTallerElectrico);
+    dataLineGraph103PlantillaLineCuartoSellantes = google.visualization.arrayToDataTable(arrayLineGraph103PlantillaLineCuartoSellantes);
+
+    // Define min points for y-axis
+    var minMaxPointsPlantillaLinePintura = findMinMaxPoints(arrayLineGraph103PlantillaLinePintura);
+    var minMaxPointsPlantillaLineTallerElectrico = findMinMaxPoints(arrayLineGraph103PlantillaLineTallerElectrico);
+    var minMaxPointsPlantillaLineCuartoSellantes = findMinMaxPoints(arrayLineGraph103PlantillaLineCuartoSellantes);
+    
+    // Line graphs options
+    lineOptions103PlantillaLinePintura = {
+      title: '11103 Plantilla Pintura',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsPlantillaLinePintura[0], max: minMaxPointsPlantillaLinePintura[1] }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions103PlantillaLineTallerElectrico = {
+      title: '11103 Plantilla Taller Eléctrico',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsPlantillaLineTallerElectrico[0], max: minMaxPointsPlantillaLineTallerElectrico[1] }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+
+    lineOptions103PlantillaLineCuartoSellantes = {
+      title: '11103 Plantilla Cuarto Sellantes',
+      width: '100%',
+      height: 500,
+      hAxis: {title: 'Mes'},
+      vAxis: {title: 'Horas', viewWindow: { min: minMaxPointsPlantillaLineCuartoSellantes[0], max: minMaxPointsPlantillaLineCuartoSellantes[1] }},
+      chartArea: {'width': '70%', 'height': '70%'},
+      pointSize: 5,
+      legend: {position: 'top', alignment: 'end'}
+    };
+  };
+
+  // Function that builds the routing report - hours comparison arrays
+  function buildReportArray(TimesTableValues, ReportValues, monthIndex, header) {
+    // Prepare the header row
+    var result = [[header, 'Hours', 'Routing Report', 'GAP']];
+
+    // Start from row 1 to skip header
+    for (let i = 1; i < TimesTableValues.length; i++) {
+      var titleHours = TimesTableValues[i][0];
+      var titleRouting = ReportValues[i][0];
+
+      // Parse values as floats (or 0 if invalid)
+      var valueHours = parseFloat(TimesTableValues[i][monthIndex]) || 0;
+      var valueRouting = parseFloat(ReportValues[i][monthIndex]) || 0;
+      var gap = valueHours - valueRouting;
+
+      result.push([titleHours, valueHours, valueRouting, gap]);
+    }
+
+    return result;
+  }
+
+  // Function that creates routing report comparison tables
+  function createReport(program) {
+    // Only create current program´s routing report
+    if (program == '100') {
+      // Create array
+      reportArray100 = buildReportArray(reportHours.TimesTableValues100, reportHours.ReportValues100, monthIndex + 1, '11100 Actuals');
+
+      // Table data
+      dataComparisonTable100Report = google.visualization.arrayToDataTable(reportArray100);
+    }
+    else if (program == '101') {
+      // Create array
+      reportArray101 = buildReportArray(reportHours.TimesTableValues101, reportHours.ReportValues101, monthIndex + 1, '11101 Actuals');
+
+      // Table data
+      dataComparisonTable101Report = google.visualization.arrayToDataTable(reportArray101);
+    }
+    else if (program == '102') {
+      // Create array
+      reportArray102 = buildReportArray(reportHours.TimesTableValues102, reportHours.ReportValues102, monthIndex + 1, '11102 Actuals');
+
+      // Table data
+      dataComparisonTable102Report = google.visualization.arrayToDataTable(reportArray102);
+    }
+    else if (program == '103'){
+      // Create array
+      reportArray103 = buildReportArray(reportHours.TimesTableValues103, reportHours.ReportValues103, monthIndex + 1, '11103 Actuals');
+
+      // Table data
+      dataComparisonTable103Report = google.visualization.arrayToDataTable(reportArray103);
+    }
+
+    // Format GAP cell color depending on program
+    var colorFormatter = new google.visualization.ColorFormat();
+    colorFormatter.addRange(null, 0, 'black', '#ff8080');
+    colorFormatter.addRange(0, 0.1, 'black', ' #ffd280');
+    colorFormatter.addRange(0.1, null, 'black', '#99ff99');
+    eval('colorFormatter.format(dataComparisonTable' + program + 'Report, 3);');
+  };
+
+  // Function that draws table charts
+  function drawTableCharts(chartData, chartOptions, table) {
+    // Format cell values
+    var numberFormatter = new google.visualization.NumberFormat({ decimalSymbol: ',' });
+    for (let i = 1; i < chartData.getNumberOfColumns(); i++) {
+      numberFormatter.format(chartData, i);
+    };
+
+    // Load corresponding variable and draw table
+    if (table == 'comparisonTable') {
+      // Create chart
+      chartComparisonTable = new google.visualization.Table(document.getElementById(table));
+
+      // Draw chart
+      chartComparisonTable.draw(chartData, chartOptions);
+
+      // Add selection event to table
+      google.visualization.events.addListener(chartComparisonTable, 'select', function() {
+        var selection = chartComparisonTable.getSelection();
+        for (var i = 0; i < selection.length; i++) {
+          var item = selection[i];
+          if (item.row != null) {
+            modifyTableDataArrays(item.row);
+          }
+        }
+      });
+    }
+    else {
+      // Create chart
+      chartComparisonTableReport = new google.visualization.Table(document.getElementById(table));
+
+      // Draw chart
+      chartComparisonTableReport.draw(chartData, chartOptions);
+    }
+  };
+
+  // Function that draws line charts
+  function drawLineCharts(chartData, chartOptions, line) {
+    // Create and draw chart
+    chartLineGraph = new google.visualization.LineChart(document.getElementById(line));
+    chartLineGraph.draw(chartData, google.charts.Line.convertOptions(chartOptions));
+  };
+
+  // Function that changes month being displayed
+  function changeMonth(newMonthIndex) {
+    // Update monthIndex
+    monthIndex = newMonthIndex;
+
+    // Reload tables with new month index depending on currentProgram
+    eval('loadCharts' + currentProgram + '();');
+    eval('createReport(' + currentProgram + ');');
+
+    // Redraw tables with new month index depending on current table topic
+    drawTableCharts(eval('dataComparisonTable' + currentProgram + currentTableTopic), tableOptions, 'comparisonTable');
+    drawTableCharts(eval('dataComparisonTable' + currentProgram + 'Report'), tableOptions, 'reportTable');
+
+    // Change data cards
+    changeCards();
+
+    // Change selected button
+    formatButtons('months');
+  };
+
+  // Function that changes charts being shown
+  function changeProgram(program) {
+    // Update global variables
+    currentProgram = program;
+
+    // Force current topic if necessary (when changing from certain programs to others)
+    if (currentProgram == '103') {
+      if (currentTableTopic == 'Fte') {
+        currentTableTopic = 'PlantillaTable';
+      }
+      if (currentLineTopic == 'CompPerc' | currentLineTopic == 'Indicador1' | currentLineTopic == 'Indicador2') {
+        currentLineTopic = 'PlantillaLine';
+      }
+    }
+
+    // Depending on current program we conceal or reveal certain line graphs
+    if (currentProgram == '103') {
+      document.getElementById('lineGraphPintura').style.display = 'block';
+      document.getElementById('lineGraphTallerElectrico').style.display = 'block';
+      document.getElementById('lineGraphCuartoSellantes').style.display = 'block';
+      document.getElementById('lineGraph').style.display = 'none';
+    }
+    else {
+      document.getElementById('lineGraphPintura').style.display = 'none';
+      document.getElementById('lineGraphTallerElectrico').style.display = 'none';
+      document.getElementById('lineGraphCuartoSellantes').style.display = 'none';
+      document.getElementById('lineGraph').style.display = 'block';
+    }
+
+    // Reload tables with new month index depending on currentProgram
+    eval('loadCharts' + currentProgram + '();');
+    eval('createReport(' + currentProgram + ');');
+
+    // Draw chart depending on program and topic
+    if (currentProgram == '103') {
+      drawTableCharts(eval('dataComparisonTable' + currentProgram + currentTableTopic), tableOptions, 'comparisonTable');
+      drawTableCharts(eval('dataComparisonTable' + currentProgram + 'Report'), tableOptions, 'reportTable');
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'Pintura'), eval('lineOptions' + currentProgram + currentLineTopic + 'Pintura'), 'lineGraphPintura');
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'TallerElectrico'), eval('lineOptions' + currentProgram + currentLineTopic + 'TallerElectrico'), 'lineGraphTallerElectrico');
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'CuartoSellantes'), eval('lineOptions' + currentProgram + currentLineTopic + 'CuartoSellantes'), 'lineGraphCuartoSellantes');
+    }
+    else {
+      drawTableCharts(eval('dataComparisonTable' + currentProgram + currentTableTopic), tableOptions, 'comparisonTable');
+      drawTableCharts(eval('dataComparisonTable' + currentProgram + 'Report'), tableOptions, 'reportTable');
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic), eval('lineOptions' + currentProgram + currentLineTopic), 'lineGraph');
+    }
+
+    // Change data cards
+    changeCards();
+    
+    // Change selected button
+    formatButtons('program');
+    formatButtons('tableTopic');
+    formatButtons('lineTopic');
+  };
+
+  // Function that changes table topic being shown
+  function changeTableTopic (topic) {
+    // Set current table topic variable depending on current program
+    if (currentProgram == '103') {
+      if (topic == 'Fte') {
+        return;
+      }
+    }
+
+    // Update global variables
+    currentTableTopic = topic;
+
+    // Change table chart data and options depending on topic
+    drawTableCharts(eval('dataComparisonTable' + currentProgram + currentTableTopic), tableOptions, 'comparisonTable');
+
+    // Change selected button
+    formatButtons('tableTopic');
+  };
+
+  // Function that changes the chart topic displayed depending on the buttons pressed
+  function changeLineTopic(topic) {
+    // Set current line topic variable depending on current program
+    if (currentProgram == '103') {
+      if (topic == 'CompPerc' | topic == 'Indicador1' | topic == 'Indicador2') {
+        return;
+      }
+    }
+
+    currentLineTopic = topic;
+
+    // Change line chart data and options depending on topic and current program
+    if (currentProgram == '103') {
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'Pintura'), eval('lineOptions' + currentProgram + currentLineTopic + 'Pintura'), 'lineGraphPintura');
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'TallerElectrico'), eval('lineOptions' + currentProgram + currentLineTopic + 'TallerElectrico'), 'lineGraphTallerElectrico');
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'CuartoSellantes'), eval('lineOptions' + currentProgram + currentLineTopic + 'CuartoSellantes'), 'lineGraphCuartoSellantes');
+    }
+    else {
+      drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic), eval('lineOptions' + currentProgram + currentLineTopic), 'lineGraph');
+    }
+
+    // Change selected button
+    formatButtons('lineTopic');
+  };
+
+  // Function that changes the data cards being shown
+  function changeCards() {
+    // Choose whether to display data cards depending on current program
+    if (currentProgram == '103') {
+      // Hide data cards
+      document.getElementById('dataCards').style.display = 'none';
+    }
+    else {
+      // Display data cards
+      document.getElementById('dataCards').style.display = 'block';
+
+      // Set data to display on data cards depending on current program
+      displayData = eval('productiveTime' + currentProgram + '.CompValues;');
+
+      // Write new data cards
+      // === Competitividad ===
+      document.getElementById("dataCompActual").innerHTML = "Competitividad: " + displayData[0][monthIndex + 1] + '<br><br>';
+      document.getElementById("dataCompTarget").innerHTML = "Competitividad: " + displayData[0][monthIndex + 1 + 13] + '<br><br>';
+      document.getElementById("dataCompGap").innerHTML = "Competitividad: " + displayData[0][monthIndex + 1 + 13 + 13];
+      // Format GAP color
+      if (displayData[0][monthIndex + 1 + 13 + 13] < 0) {
+        document.getElementById("dataCompGap").innerHTML += ' &darr;<br><br>';    // Arrow down
+        document.getElementById("dataCompGap").style.color = '#ff0000';
+      }
+      else if (displayData[0][monthIndex + 1 + 13 + 13] > 0) {
+        document.getElementById("dataCompGap").innerHTML += ' &uarr;<br><br>';    // Arrow up
+        document.getElementById("dataCompGap").style.color = '#008000';
+      }
+      else {
+        document.getElementById("dataCompGap").innerHTML += '<br><br>';
+        document.getElementById("dataCompGap").style.color = '#ffa500';
+      }
+
+      // === Indicador 1 ===
+      document.getElementById("dataIndicador1Actual").innerHTML = "Indicador 1: " + displayData[1][monthIndex + 1] + '<br><br>';
+      document.getElementById("dataIndicador1Target").innerHTML = "Indicador 1: " + displayData[1][monthIndex + 1 + 13] + '<br><br>';
+      document.getElementById("dataIndicador1Gap").innerHTML = "Indicador 1: " + displayData[1][monthIndex + 1 + 13 + 13];
+      // Format GAP color
+      if (displayData[1][monthIndex + 1 + 13 + 13] < 0) {
+        document.getElementById("dataIndicador1Gap").innerHTML += ' &darr;<br><br>';   // Arrow down
+        document.getElementById("dataIndicador1Gap").style.color = '#ff0000';
+      }
+      else if (displayData[1][monthIndex + 1 + 13 + 13] > 0) {
+        document.getElementById("dataIndicador1Gap").innerHTML += ' &uarr;<br><br>';   // Arrow up
+        document.getElementById("dataIndicador1Gap").style.color = '#008000';
+      }
+      else {
+        document.getElementById("dataIndicador1Gap").innerHTML += '<br><br>';
+        document.getElementById("dataIndicador1Gap").style.color = '#ffa500';
+      }
+
+      // === Indicador 2 ===
+      document.getElementById("dataIndicador2Actual").innerHTML = "Indicador 2: " + displayData[2][monthIndex + 1] + '<br>';
+      document.getElementById("dataIndicador2Target").innerHTML = "Indicador 2: " + displayData[2][monthIndex + 1 + 13] + '<br>';
+      document.getElementById("dataIndicador2Gap").innerHTML = "Indicador 2: " + displayData[2][monthIndex + 1 + 13 + 13];
+      // Format GAP color
+      if (displayData[2][monthIndex + 1 + 13 + 13] < 0) {
+        document.getElementById("dataIndicador2Gap").innerHTML += ' &darr;<br>';    // Arrow down
+        document.getElementById("dataIndicador2Gap").style.color = '#ff0000';
+      }
+      else if (displayData[2][monthIndex + 1 + 13 + 13] > 0) {
+        document.getElementById("dataIndicador2Gap").innerHTML += ' &uarr;<br>';    // Arrow up
+        document.getElementById("dataIndicador2Gap").style.color = '#008000';
+      }
+      else {
+        document.getElementById("dataIndicador2Gap").innerHTML += '<br>';
+        document.getElementById("dataIndicador2Gap").style.color = '#ffa500';
+      }
+    }
+  };
+  
+  // Call function to load the page
+  loadPage();
+
+  // Redraw charts on window resize
+  $(window).resize(function(){
+    if (currentProgram && currentLineTopic) {
+      if (currentProgram == '103') {
+        drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'Pintura'), eval('lineOptions' + currentProgram + currentLineTopic + 'Pintura'), 'lineGraphPintura');
+        drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'TallerElectrico'), eval('lineOptions' + currentProgram + currentLineTopic + 'TallerElectrico'), 'lineGraphTallerElectrico');
+        drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic + 'CuartoSellantes'), eval('lineOptions' + currentProgram + currentLineTopic + 'CuartoSellantes'), 'lineGraphCuartoSellantes');
+      }
+      else {
+        drawLineCharts(eval('dataLineGraph' + currentProgram + currentLineTopic), eval('lineOptions' + currentProgram + currentLineTopic), 'lineGraph');
+      }
+    }
+  });
+</script>
